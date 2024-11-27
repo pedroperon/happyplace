@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Happy Place</string>
+    <string name="grams">grams</string>
+    <string name="liters">liters</string>
+    <string name="kg">Kg</string>
+    <string name="cagette">Cagette</string>
+    <string name="biocoop">Biocoop</string>
+    <string name="bigretail">Grande surface</string>
+    <string name="bricolage">Bricolage</string>
+    <string name="marche">marché</string>
+    <string name="dadison">Dadison</string>
+    <string name="gram">gram</string>
+    <string name="kgs">Kg</string>
+    <string name="liter">liter</string>
+    <string name="unit">unit</string>
+    <string name="units">units</string>
+    <string name="added_on_date">Added on %1$s</string>
+    <string name="food">food</string>
+    <string name="hygiene">hygiene</string>
+    <string name="cleaning">cleaning</string>
+    <string name="appliance">appliance</string>
+    <string name="create_new">Create new…</string>
+    <string name="home_garden_diy">Home / Garden / DIY</string>
+    <string name="bulk">bulk</string>
+    <string name="add_item">Add item</string>
+    <string name="edit">edit</string>
+    <string name="edit_item">Edit item</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete_item">Delete item</string>
+    <string name="confirm_delete_question">Are you sure you want to delete this item?</string>
+    <string name="name">Name</string>
+    <string name="quantity">Quantity</string>
+    <string name="details">Details</string>
+    <string name="done">Done</string>
+    <string name="expand_list">expand list</string>
+</resources>
