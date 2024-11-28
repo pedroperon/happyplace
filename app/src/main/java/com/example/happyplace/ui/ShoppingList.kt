@@ -1,12 +1,9 @@
 package com.example.happyplace.ui
 
-import android.view.RoundedCorner
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,10 +36,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -166,9 +163,10 @@ fun ShoppingListItemCard(item: ShoppingListItem,
                          onDeleteItem: (ShoppingListItem)->Unit = {}
 ) {
     Row(modifier = Modifier
-        .padding(8.dp)
         .fillMaxWidth()
-        .combinedClickable(onDoubleClick = { toggleItemInCart(item) }) {  }
+        .background(if(item.isInCart) Color(0xFFEEEEEE) else Color(0xFFF8F8F8))
+        .combinedClickable(onDoubleClick = { toggleItemInCart(item) }) { /*TODO: show vanishing msg saying double-tap-to-move-in-out-of-cart*/ }
+        .padding(8.dp)
         .animateContentSize(),
         verticalAlignment = Alignment.Top
     ) {
@@ -179,19 +177,26 @@ fun ShoppingListItemCard(item: ShoppingListItem,
             ), null
         )
         Column(
-            verticalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.padding(start = 4.dp)
+//            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .padding(start = 4.dp)
         ) {
             Row {
                 // name + quantity
+                val decoration = if(item.isInCart) TextDecoration.LineThrough else null
+                val textColor = if(item.isInCart) Color.Gray else Color.Unspecified
                 Text(
                     text = item.name,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     softWrap = false,
+                    textDecoration = decoration,
+                    color = textColor
                 )
                 ItemQuantityText(
                     itemQuantity = item.quantity,
+                    textDecoration = decoration,
+                    color = textColor,
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
@@ -264,6 +269,7 @@ fun TagBox(text: String) {
     Box(contentAlignment = Alignment.Center,
         modifier = Modifier
             .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(33))
             .background(Color.LightGray)
     ) {
         Text(
@@ -281,7 +287,10 @@ fun TagBox(text: String) {
 
 
 @Composable
-fun ItemQuantityText(itemQuantity: ItemQuantity?, modifier: Modifier = Modifier) {
+fun ItemQuantityText(itemQuantity: ItemQuantity?,
+                     modifier: Modifier = Modifier,
+                     textDecoration: TextDecoration?,
+                     color: Color) {
     if(itemQuantity==null || itemQuantity.amountNumber==0)
         return
 
@@ -293,14 +302,16 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?, modifier: Modifier = Modifier)
 
     Text(
         text = "($t)",
-        modifier = modifier
+        modifier = modifier,
+        textDecoration = textDecoration,
+        color = color
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun ShoppingListItemCardPreview() {
-    ShoppingListItemCard(item = LocalShoppingListDataProvider.getShoppingList()[3],
+    ShoppingListItemCard(item = LocalShoppingListDataProvider.getShoppingList()[1],
         expanded = true,
         toggleExpandCard = {},
         toggleItemInCart = {}

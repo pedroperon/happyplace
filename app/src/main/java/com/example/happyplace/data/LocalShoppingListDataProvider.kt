@@ -18,7 +18,8 @@ object LocalShoppingListDataProvider {
                 name = "Café",
                 bulk = true,
                 category = ItemCategory.FOOD,
-                shop = Shop.CAGETTE
+                shop = Shop.CAGETTE,
+                isInCart = true
             ),
             ShoppingListItem(
                 name = "Fruits",
@@ -32,7 +33,8 @@ object LocalShoppingListDataProvider {
                 quantity = ItemQuantity(1, MeasuringUnit.LITER),
                 bulk = true,
                 category = ItemCategory.CLEANING,
-                shop = Shop.BIOCOOP
+                shop = Shop.BIOCOOP,
+                isInCart = true
             ),
             ShoppingListItem(
                 name = "Déodorant",

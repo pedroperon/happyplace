@@ -11,7 +11,9 @@ class ShoppingListViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         ShoppingListUiState(
-            shoppingList = LocalShoppingListDataProvider.getShoppingList().toMutableList()
+            shoppingList = LocalShoppingListDataProvider
+                .getShoppingList()
+                .sortedBy { item -> if(item.isInCart) 1 else 0 }
         )
     )
     val uiState: StateFlow<ShoppingListUiState> = _uiState.asStateFlow()
