@@ -2,8 +2,10 @@ package com.example.happyplace.ui
 
 import android.view.RoundedCorner
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,11 +55,6 @@ import com.example.happyplace.model.ShoppingListItem
 import com.example.happyplace.model.ShoppingListViewModel
 import java.text.DateFormat
 
-//ShoppingList(
-////onEditItem = {/*TODO*/ },
-//modifier = Modifier.fillMaxSize(),
-//contentPadding = innerPadding
-//)
 
 @Composable
 fun ShoppingList(
@@ -88,18 +85,18 @@ fun ShoppingList(
                     ShoppingListItemCard(
                         item = item,
                         toggleItemInCart = {
-                            viewModel.toggleItemBought(item)
+                            viewModel.toggleItemBought(it)
                         },
                         expanded = item.showDetails,
                         toggleExpandCard = {
-                            viewModel.toggleExpandItem(item)
+                            viewModel.toggleExpandItem(it)
                         },
                         onEditItem = {
-                            viewModel.stageItem(item)
-                            viewModel.openEditItemDialog(item)
+                            viewModel.stageItem(it)
+                            viewModel.openEditItemDialog(it)
                         },
                         onDeleteItem = {
-                            viewModel.stageItem(item)
+                            viewModel.stageItem(it)
                             showDeleteConfirmationDialog = true
                         }
                     )
@@ -110,6 +107,7 @@ fun ShoppingList(
 
     if(showDeleteConfirmationDialog) {
         DeleteWarningPopupDialog(
+            itemName = uiState.itemStagedForEdition?.name,
             onDismissRequest = {
                 viewModel.stageItem(null)
                 showDeleteConfirmationDialog = false
@@ -124,7 +122,9 @@ fun ShoppingList(
 }
 
 @Composable
-fun DeleteWarningPopupDialog(onDismissRequest: ()->Unit, onConfirm: ()->Unit) {
+fun DeleteWarningPopupDialog(itemName: String?,
+                             onDismissRequest: ()->Unit,
+                             onConfirm: ()->Unit) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
@@ -145,40 +145,30 @@ fun DeleteWarningPopupDialog(onDismissRequest: ()->Unit, onConfirm: ()->Unit) {
             Text(text = stringResource(R.string.delete_item))
         },
         text = {
-            Text(text = stringResource(R.string.confirm_delete_question))
+            Text(text =
+            if (itemName == null)
+                stringResource(R.string.confirm_delete_question)
+            else
+                stringResource(R.string.confirm_delete_question_with_name, itemName)
+            )
         }
-
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShoppingListItemCard(item: ShoppingListItem,
-                         toggleItemInCart: ()->Unit,
+                         toggleItemInCart: (ShoppingListItem)->Unit,
                          expanded: Boolean = false,
-                         toggleExpandCard: ()->Unit,
+                         toggleExpandCard: (ShoppingListItem)->Unit,
                          modifier: Modifier = Modifier,
-                         onEditItem: ()->Unit = {},
-                         onDeleteItem: ()->Unit = {}
+                         onEditItem: (ShoppingListItem)->Unit = {},
+                         onDeleteItem: (ShoppingListItem)->Unit = {}
 ) {
-    /*  OK val name : String,
-        OK val quantity : ItemQuantity? = null,
-        OK val details : String? = "",
-        val bulk : Boolean? = false,
-        val category : ItemCategory? = null,
-        val shop : Shop? = null,
-        OK val dateCreated : Date */
-
     Row(modifier = Modifier
         .padding(8.dp)
         .fillMaxWidth()
-        .clickable { toggleItemInCart() }
-//        .pointerInput(Unit) {
-//            detectTapGestures(
-//                onDoubleTap = {
-//                    toggleItemInCart()
-//            }
-//            )
-//        }
+        .combinedClickable(onDoubleClick = { toggleItemInCart(item) }) {  }
         .animateContentSize(),
         verticalAlignment = Alignment.Top
     ) {
@@ -238,7 +228,7 @@ fun ShoppingListItemCard(item: ShoppingListItem,
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxHeight()
         ) {
-            IconButton(onClick = toggleExpandCard) {
+            IconButton(onClick = { toggleExpandCard(item) }) {
                 Icon(
                     painter = painterResource(
                         if (expanded) R.drawable.baseline_keyboard_arrow_up_24
@@ -250,13 +240,13 @@ fun ShoppingListItemCard(item: ShoppingListItem,
             Spacer(Modifier.weight(1F))
             if (expanded && !item.isInCart) {
                 Row(horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = onEditItem) {
+                    IconButton(onClick = { onEditItem(item) }) {
                         Icon(Icons.Filled.Edit,
                             stringResource(R.string.edit),
                             tint = Color.Gray
                         )
                     }
-                    IconButton(onClick = onDeleteItem) {
+                    IconButton(onClick = { onDeleteItem(item) }) {
                         Icon(Icons.Filled.Delete,
                             stringResource(R.string.delete),
                             tint = Color.Gray

@@ -34,4 +34,5 @@
     <string name="details">Details</string>
     <string name="done">Done</string>
     <string name="expand_list">expand list</string>
+    <string name="confirm_delete_question_with_name">Are you sure you want to delete %1$s?</string>
 </resources>

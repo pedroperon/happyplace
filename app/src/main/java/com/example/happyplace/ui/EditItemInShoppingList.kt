@@ -46,6 +46,15 @@ import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.MeasuringUnit
 import com.example.happyplace.model.ShoppingListItem
 
+
+/*  OK val name : String,
+    OK val quantity : ItemQuantity? = null,
+    OK val details : String? = "",
+    OK val bulk : Boolean? = false,
+    >> val category : ItemCategory? = null,
+    >> val shop : Shop? = null,
+ */
+
 @Composable
 fun EditItemInShoppingListDialog(
     onDismissRequest: ()->Unit,
