@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         )
 
         shoppingListViewModel.initialSetupEvent.observe(this) { initialSetupEvent ->
-            shoppingListViewModel.setShoppingList(initialSetupEvent.itemsList)
+            shoppingListViewModel.setShoppingList(initialSetupEvent)
             observeShoppingListChanges()
         }
         enableEdgeToEdge()
@@ -54,8 +54,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun observeShoppingListChanges() {
-        shoppingListViewModel.shoppingListUiState.observe(this) { shoppingListUiModel ->
-            shoppingListViewModel.setShoppingList(shoppingListUiModel.shoppingList)
+        shoppingListViewModel.shoppingListUiState.observe(this) { retrievedShoppingListUiModel ->
+            shoppingListViewModel.setShoppingList(retrievedShoppingListUiModel)
         }
     }
 }

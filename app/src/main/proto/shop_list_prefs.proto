@@ -28,4 +28,6 @@ message ShoppingListItem {
 
 message LocalShoppingList {
   repeated ShoppingListItem items =  1;
+  repeated string shops = 2;
+  repeated string categories = 3;
 }

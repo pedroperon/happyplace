@@ -10,15 +10,15 @@ import com.example.happyplace.data.ShoppingListRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ShoppingListUiState(
     val shoppingList: List<ShoppingListItem> = listOf(),
     val showEditItemDialog: Boolean = false,
-    val itemStagedForEdition: ShoppingListItem? = null
+    val itemStagedForEdition: ShoppingListItem? = null,
+    val shopsList: List<String> = listOf(),
+    val categoriesList: List<String> = listOf()
 )
 
 class ShoppingListViewModel(
@@ -29,17 +29,7 @@ class ShoppingListViewModel(
         emit(shoppingListRepository.fetchInitialShoppingList())
     }
 
-    private val shoppingListFlow = shoppingListRepository.shoppingListFlow
-
-    private val shoppingListUiStateFlow = combine(
-        shoppingListFlow,
-        flowOf(1..3)
-    ) { shoppingList: LocalShoppingList, _ ->
-        return@combine ShoppingListUiState(
-            shoppingList = shoppingList.itemsList
-        )
-    }
-    val shoppingListUiState = shoppingListUiStateFlow.asLiveData()
+    val shoppingListUiState = shoppingListRepository.shoppingListFlow.asLiveData()
 
     private val _uiState = MutableStateFlow(ShoppingListUiState())
     val uiState: StateFlow<ShoppingListUiState> = _uiState.asStateFlow()
@@ -81,7 +71,6 @@ class ShoppingListViewModel(
     fun openNewItemDialog() {
         openEditItemDialog(null)
     }
-
     fun openEditItemDialog(item:ShoppingListItem?) {
         stageItem(item)
         _uiState.update {
@@ -95,9 +84,13 @@ class ShoppingListViewModel(
         }
     }
 
-    fun setShoppingList(itemsList: List<ShoppingListItem>) {  //SERÁ???
+    fun setShoppingList(retrievedShoppingList : LocalShoppingList) {
         _uiState.update {
-            it.copy(shoppingList = itemsList)
+            it.copy(
+                shoppingList = retrievedShoppingList.itemsList,
+                shopsList = retrievedShoppingList.shopsList,
+                categoriesList = retrievedShoppingList.categoriesList
+            )
         }
     }
 }
