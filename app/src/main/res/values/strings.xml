@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Happy Place</string>
+    <string name="app_name" translatable="false">Happy Place</string>
     <string name="grams">grams</string>
     <string name="liters">liters</string>
     <string name="kg">Kg</string>
@@ -7,7 +7,7 @@
     <string name="biocoop">Biocoop</string>
     <string name="bigretail">Grande surface</string>
     <string name="bricolage">Bricolage</string>
-    <string name="marche">marché</string>
+    <string name="marche">Marché</string>
     <string name="dadison">Dadison</string>
     <string name="gram">gram</string>
     <string name="kgs">Kg</string>
@@ -35,4 +35,7 @@
     <string name="done">Done</string>
     <string name="expand_list">expand list</string>
     <string name="confirm_delete_question_with_name">Are you sure you want to delete %1$s?</string>
+    <string name="none">"(none)"</string>
+    <string name="shop">Shop:</string>
+    <string name="category">Category:</string>
 </resources>

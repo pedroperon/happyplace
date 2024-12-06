@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option java_package = "com.example.happyplace";
+option java_multiple_files = true;
+
+message ItemQuantity {
+  int32 amount = 1;
+  enum MeasurementUnit {
+    UNIT = 0;
+    KG = 1;
+    GRAM = 2;
+    LITER = 3;
+  }
+  MeasurementUnit unit = 2;
+}
+
+message ShoppingListItem {
+  string name = 1;
+  string details = 2;
+  bool bulk = 3;
+  bool urgent = 4;
+  bool isInCart = 5;
+  int64 dateCreated = 7;
+  ItemQuantity quantity = 8;
+//  ItemCategory category = 9;
+//  Shop shop = 10;
+}
+
+message LocalShoppingList {
+  repeated ShoppingListItem items =  1;
+}

@@ -25,10 +25,11 @@ import com.example.happyplace.ui.theme.HappyPlaceTheme
 
 @Composable
 fun HappyPlaceApp(
+    shoppingListViewModel: ShoppingListViewModel,
     windowSize: WindowWidthSizeClass,
     modifier: Modifier = Modifier) {
 
-    val shoppingListViewModel: ShoppingListViewModel = viewModel()
+//    val shoppingListViewModel: ShoppingListViewModel = viewModel()
 
     Scaffold(
         topBar = {
@@ -67,12 +68,12 @@ fun HappyPlaceAppBar() {
     )
 }
 
-@Preview(showBackground = true, showSystemUi = true, widthDp = 700)
-@Composable
-fun HappyPlaceAppCompactPreview() {
-    HappyPlaceTheme {
-        Surface {
-            HappyPlaceApp(WindowWidthSizeClass.Compact)
-        }
-    }
-}
+//@Preview(showBackground = true, showSystemUi = true, widthDp = 700)
+//@Composable
+//fun HappyPlaceAppCompactPreview() {
+//    HappyPlaceTheme {
+//        Surface {
+//            HappyPlaceApp(windowSize = WindowWidthSizeClass.Compact)
+//        }
+//    }
+//}

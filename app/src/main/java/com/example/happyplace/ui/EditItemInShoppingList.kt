@@ -34,16 +34,17 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.happyplace.ItemQuantity.MeasurementUnit
 import com.example.happyplace.R
-import com.example.happyplace.data.LocalShoppingListDataProvider
+import com.example.happyplace.ShoppingListItem
+import com.example.happyplace.copy
 import com.example.happyplace.model.EditItemUiState
 import com.example.happyplace.model.EditItemViewModel
-import com.example.happyplace.model.MeasuringUnit
-import com.example.happyplace.model.ShoppingListItem
+import com.example.happyplace.model.ItemCategory
+import com.example.happyplace.model.Shop
 
 
 /*  OK val name : String,
@@ -60,9 +61,9 @@ fun EditItemInShoppingListDialog(
     onDone: (ShoppingListItem)->Unit,
     item: ShoppingListItem?
 ) {
-    val isNewItem = (item==null)
+    val isNewItem = item?.name?.isEmpty() ?: true
 
-    val viewModel = EditItemViewModel(item ?: ShoppingListItem(""))
+    val viewModel = EditItemViewModel(item?.copy{} ?: ShoppingListItem.newBuilder().build())
     val editItemUiState by viewModel.uiState.collectAsState()
 
     Dialog(
@@ -105,7 +106,7 @@ fun EditItemInShoppingListDialog(
                 // QUANTITY + UNIT
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField( // QUANTITY
-                        value = "${editItemUiState.itemBeingEdited.quantity?.amountNumber ?: ""}",
+                        value = toStringEmptyIfZero(editItemUiState.itemBeingEdited.quantity.amount),
                         onValueChange = { viewModel.updateQuantity(it) },
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true,
@@ -156,6 +157,15 @@ fun EditItemInShoppingListDialog(
                     Text(text = "Urgent")
                 }
 
+                // CATEGORY
+                CategoryDropdownMenu(viewModel,editItemUiState)
+                
+                // SHOP
+                ShopDropdownMenu(
+                    viewModel = viewModel,
+                    uiState = editItemUiState
+                )
+                
                 // BUTTONS CANCEL / DONE
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.weight(1.0F))
@@ -178,6 +188,105 @@ fun EditItemInShoppingListDialog(
     }
 }
 
+fun toStringEmptyIfZero(amount: Number): String {
+    return if(amount==0) ""
+    else "$amount"
+}
+
+@Composable
+fun ShopDropdownMenu(
+    modifier: Modifier = Modifier,
+    viewModel: EditItemViewModel,
+    uiState: EditItemUiState
+) {
+    Box(modifier = modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.clickable(onClick = {viewModel.toggleShopDropDownOpen()})
+        ) {
+            Text(text = stringResource(R.string.shop))
+            Text(
+                text = "Loja"//stringResource(uiState.itemBeingEdited.shop?.nameId ?: R.string.none)
+            )
+            Image(
+                painter = painterResource(R.drawable.baseline_arrow_right_24),
+                contentDescription = stringResource(R.string.expand_list),
+                modifier = Modifier.rotate(if (uiState.shopDropDownExpanded) 270F else 90F)
+            )
+        }
+        DropdownMenu(
+            expanded = uiState.shopDropDownExpanded,
+            onDismissRequest = { viewModel.toggleShopDropDownOpen(false) }
+        ) {
+            DropdownMenuItem(
+                text = {
+                    Text(text = stringResource(R.string.none))
+                },
+                onClick = {
+//                    viewModel.shopChosen(null)
+                }
+            )
+            Shop.entries.forEach {
+                DropdownMenuItem(
+                    text = {
+                        Text(text = stringResource(it.nameId))
+                    },
+                    onClick = {
+//                        viewModel.shopChosen(it)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryDropdownMenu(viewModel: EditItemViewModel,
+                         uiState: EditItemUiState,
+                         modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.clickable(onClick = {viewModel.toggleCategoryDropDownOpen()})
+        ) {
+            Text(text = stringResource(R.string.category))
+            Text(
+                text = "categoria" //stringResource(uiState.itemBeingEdited.category?.nameId ?: R.string.none)
+            )
+            Image(
+                painter = painterResource(R.drawable.baseline_arrow_right_24),
+                contentDescription = stringResource(R.string.expand_list),
+                modifier = Modifier.rotate(if (uiState.categoryDropDownExpanded) 270F else 90F)
+            )
+        }
+        DropdownMenu(
+            expanded = uiState.categoryDropDownExpanded,
+            onDismissRequest = { viewModel.toggleCategoryDropDownOpen(false) }
+        ) {
+            DropdownMenuItem(
+                text = {
+                    Text(text = stringResource(R.string.none))
+                },
+                onClick = {
+//                    viewModel.categoryChosen(null)
+                }
+            )
+            ItemCategory.entries.forEach {
+                DropdownMenuItem(
+                    text = {
+                        Text(text = stringResource(it.nameId))
+                    },
+                    onClick = {
+//                        viewModel.categoryChosen(it)
+                    }
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun UnitDropdownMenu(
     viewModel: EditItemViewModel,
@@ -185,15 +294,17 @@ private fun UnitDropdownMenu(
     modifier : Modifier = Modifier
 ) {
     Box(modifier = modifier) {
-        if(editItemUiState.itemBeingEdited.quantity!=null) {
+        if(editItemUiState.itemBeingEdited.quantity!=null &&
+            editItemUiState.itemBeingEdited.quantity.amount!=0) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable(onClick = { viewModel.toggleUnitDropDownOpen() })
             ) {
                 Text(
-                    text = stringResource(
-                        editItemUiState.itemBeingEdited.quantity.unit.namePluralStringId
-                    )
+                    text = editItemUiState.itemBeingEdited.quantity.unit.name.lowercase()
+//                    stringResource(
+//                        editItemUiState.itemBeingEdited.quantity.unit.namePluralStringId
+//                    )
                 )
                 Image(
                     painter = painterResource(R.drawable.baseline_arrow_right_24),
@@ -206,13 +317,13 @@ private fun UnitDropdownMenu(
             expanded = editItemUiState.unitDropDownExpanded,
             onDismissRequest = { viewModel.toggleUnitDropDownOpen(false) }
         ) {
-            MeasuringUnit.entries.forEach {
+            MeasurementUnit.entries.forEach {
                 DropdownMenuItem(
                     text = {
-                        Text(text = stringResource(it.nameSingularStringId))
+                        Text(text = it.name.lowercase())//stringResource(it.nameSingularStringId))
                     },
                     onClick = {
-                        viewModel.chosenQuantityUnit(it)
+                        viewModel.quantityUnitChosen(it)
                         viewModel.toggleUnitDropDownOpen(false)
                     }
                 )
@@ -221,12 +332,12 @@ private fun UnitDropdownMenu(
     }
 }
 
-@Preview
-@Composable
-fun EditItemInShoppingListDialogPreview() {
-    EditItemInShoppingListDialog(
-        {},
-        {},
-        LocalShoppingListDataProvider.getShoppingList()[3]
-    )
-}
+//@Preview
+//@Composable
+//fun EditItemInShoppingListDialogPreview() {
+//    EditItemInShoppingListDialog(
+//        {},
+//        {},
+//        LocalShoppingListDataProvider.shoppingList[3]
+//    )
+//}

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,16 +42,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.happyplace.ItemQuantity
 import com.example.happyplace.R
-import com.example.happyplace.data.LocalShoppingListDataProvider
-import com.example.happyplace.model.ItemQuantity
-import com.example.happyplace.model.ShoppingListItem
+import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.model.ShoppingListViewModel
 import java.text.DateFormat
+import java.util.Date
 
 
 @Composable
@@ -62,11 +62,13 @@ fun ShoppingList(
     val uiState by viewModel.uiState.collectAsState()
 
     var showDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false)}
+    var expandedItem by rememberSaveable { mutableStateOf<ShoppingListItem?>(null)}
 
     if (uiState.showEditItemDialog) {
+        val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
         EditItemInShoppingListDialog(
             onDismissRequest = { viewModel.closeEditItemDialog() },
-            onDone = { viewModel.saveNewItem(it) },
+            onDone = { viewModel.saveItem(itemIndex, it) },
             item = uiState.itemStagedForEdition
         )
     }
@@ -78,15 +80,18 @@ fun ShoppingList(
                 .verticalScroll(rememberScrollState())) {
 
             uiState.shoppingList.forEach { item ->
-                key(item.name) {
+                key(item.name+item.details) {
                     ShoppingListItemCard(
                         item = item,
                         toggleItemInCart = {
                             viewModel.toggleItemBought(it)
                         },
-                        expanded = item.showDetails,
+                        expanded = (item==expandedItem),
                         toggleExpandCard = {
-                            viewModel.toggleExpandItem(it)
+                            expandedItem = when(expandedItem) {
+                                item -> null
+                                else -> item
+                            }
                         },
                         onEditItem = {
                             viewModel.stageItem(it)
@@ -99,6 +104,7 @@ fun ShoppingList(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 
@@ -154,18 +160,21 @@ fun DeleteWarningPopupDialog(itemName: String?,
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ShoppingListItemCard(item: ShoppingListItem,
-                         toggleItemInCart: (ShoppingListItem)->Unit,
-                         expanded: Boolean = false,
-                         toggleExpandCard: (ShoppingListItem)->Unit,
-                         modifier: Modifier = Modifier,
-                         onEditItem: (ShoppingListItem)->Unit = {},
-                         onDeleteItem: (ShoppingListItem)->Unit = {}
+fun ShoppingListItemCard(
+    item: ShoppingListItem,
+    toggleItemInCart: (ShoppingListItem)->Unit,
+    expanded: Boolean = false,
+    toggleExpandCard: (ShoppingListItem)->Unit,
+    modifier: Modifier = Modifier,
+    onEditItem: (ShoppingListItem)->Unit = {},
+    onDeleteItem: (ShoppingListItem)->Unit = {}
 ) {
     Row(modifier = Modifier
         .fillMaxWidth()
-        .background(if(item.isInCart) Color(0xFFEEEEEE) else Color(0xFFF8F8F8))
-        .combinedClickable(onDoubleClick = { toggleItemInCart(item) }) { /*TODO: show vanishing msg saying double-tap-to-move-in-out-of-cart*/ }
+        .background(bgColorForItem(item))
+        .combinedClickable(
+            onDoubleClick = { toggleItemInCart(item) }
+        ) { /*TODO: show vanishing msg saying double-tap-to-move-in-out-of-cart*/ }
         .padding(8.dp)
         .animateContentSize(),
         verticalAlignment = Alignment.Top
@@ -208,17 +217,17 @@ fun ShoppingListItemCard(item: ShoppingListItem,
                 if (item.bulk)
                     TagBox(text = stringResource(R.string.bulk))
 
-                if (item.category != null)
-                    TagBox(text = stringResource(item.category.nameResId))
-
-                if (item.shop != null)
-                    TagBox(text = stringResource(item.shop.shopNameId))
+//                if (item.category != null)
+//                    TagBox(text = stringResource(item.category.nameId))
+//
+//                if (item.shop != null)
+//                    TagBox(text = stringResource(item.shop.nameId))
 
                 Spacer(modifier = Modifier.weight(1F))
                 Text(
                     text = stringResource(
                         R.string.added_on_date,
-                        DateFormat.getDateInstance().format(item.dateCreated)
+                        DateFormat.getDateInstance().format(Date(item.dateCreated))
                     ),
                     fontSize = 12.sp,
                     color = Color.Gray
@@ -264,6 +273,18 @@ fun ShoppingListItemCard(item: ShoppingListItem,
     HorizontalDivider()
 }
 
+private fun bgColorForItem(item: ShoppingListItem): Color {
+    val bgColor = if (item.isInCart) {
+        Color(0xFFEEEEEE)
+    } else {
+        if (item.urgent)
+            Color(0xFFFFDBDB)
+        else
+            Color(0xFFF8F8F8)
+    }
+    return bgColor
+}
+
 @Composable
 fun TagBox(text: String) {
     Box(contentAlignment = Alignment.Center,
@@ -291,14 +312,15 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?,
                      modifier: Modifier = Modifier,
                      textDecoration: TextDecoration?,
                      color: Color) {
-    if(itemQuantity==null || itemQuantity.amountNumber==0)
+    if(itemQuantity==null || itemQuantity.amount==0)
         return
 
-    val isPlural = itemQuantity.amountNumber>1
-    val t = "${itemQuantity.amountNumber} " +
-            stringResource(
-                if(isPlural) itemQuantity.unit.namePluralStringId
-                else itemQuantity.unit.nameSingularStringId)
+    val isPlural = itemQuantity.amount>1
+    val t = "${itemQuantity.amount} " +
+//            stringResource(
+                if(isPlural) itemQuantity.unit.name.lowercase()//PluralStringId
+                else itemQuantity.unit.name.lowercase()//SingularStringId
+//            )
 
     Text(
         text = "($t)",
@@ -308,12 +330,12 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?,
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ShoppingListItemCardPreview() {
-    ShoppingListItemCard(item = LocalShoppingListDataProvider.getShoppingList()[1],
-        expanded = true,
-        toggleExpandCard = {},
-        toggleItemInCart = {}
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun ShoppingListItemCardPreview() {
+//    ShoppingListItemCard(item = LocalShoppingListDataProvider.shoppingList.collectLatest {  }
+//        expanded = true,
+//        toggleExpandCard = {},
+//        toggleItemInCart = {}
+//    )
+//}
