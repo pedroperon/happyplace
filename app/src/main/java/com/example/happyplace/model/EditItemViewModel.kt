@@ -1,9 +1,11 @@
 package com.example.happyplace.model
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.happyplace.ItemQuantity
 import com.example.happyplace.ItemQuantity.MeasurementUnit
 import com.example.happyplace.ShoppingListItem
+import com.example.happyplace.copy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,17 +14,32 @@ import kotlinx.coroutines.flow.update
 private const val QUANTITY_MAX_DIGITS = 6
 private const val NAME_MAX_CHARS = 20
 
-class EditItemViewModel(item : ShoppingListItem) : ViewModel() {
-    private val _uiState = MutableStateFlow(EditItemUiState(item))
+data class EditItemUiState(
+    val itemBeingEdited : ShoppingListItem,
+    val unitDropDownExpanded : Boolean = false,
+    val shopDropDownExpanded: Boolean = false,
+    val categoryDropDownExpanded: Boolean = false,
+)
+
+class EditItemViewModel(item : ShoppingListItem?) : ViewModel() {
+    private val _uiState = MutableStateFlow(
+        EditItemUiState(
+            item ?: ShoppingListItem.newBuilder().build()
+        )
+    )
     val uiState: StateFlow<EditItemUiState> = _uiState.asStateFlow()
+
 
     fun updateName(newName: String) {
         if (newName.length > NAME_MAX_CHARS)
             return
 
         _uiState.update { currentState ->
-            val updatedItem = currentState.itemBeingEdited.toBuilder().setName(newName).build()
-            currentState.copy(itemBeingEdited = updatedItem)
+            currentState.copy(
+                itemBeingEdited = currentState.itemBeingEdited
+                    .toBuilder()
+                    .setName(newName)
+                    .build())
         }
     }
 
@@ -63,76 +80,68 @@ class EditItemViewModel(item : ShoppingListItem) : ViewModel() {
 
     fun updateDetails(details: String) {
         _uiState.update { currentState ->
-            val updatedItem = currentState.itemBeingEdited
+            currentState.copy(itemBeingEdited = currentState.itemBeingEdited
                 .toBuilder()
                 .setDetails(details)
-                .build()
-            currentState.copy(itemBeingEdited = updatedItem)
+                .build())
         }
     }
     fun setItemAsUrgent(urgent: Boolean) {
         _uiState.update { currentState ->
-            val updatedItem = currentState.itemBeingEdited
+            currentState.copy(itemBeingEdited = currentState.itemBeingEdited
                 .toBuilder()
                 .setUrgent(urgent)
-                .build()
-            currentState.copy(itemBeingEdited = updatedItem)
+                .build())
         }
     }
 
     fun setItemAsBulk(isBulk: Boolean) {
         _uiState.update { currentState ->
-            val updatedItem = currentState.itemBeingEdited
-                .toBuilder()
-                .setBulk(isBulk)
-                .build()
-            currentState.copy(itemBeingEdited = updatedItem)
+            currentState.copy(
+                itemBeingEdited = currentState.itemBeingEdited
+                    .toBuilder()
+                    .setBulk(isBulk)
+                    .build()
+            )
         }
     }
 
-//    fun shopChosen(shop: Shop?) {
-//        toggleShopDropDownOpen(false)
-//        _uiState.update { currentState ->
-//            val updatedItem = currentState.itemBeingEdited.copy(
-//                shop = shop
-//            )
-//            currentState.copy(itemBeingEdited = updatedItem)
-//        }
-//    }
-//
-//    fun categoryChosen(category: ItemCategory?) {
-//        toggleCategoryDropDownOpen(false)
-//        _uiState.update { currentState ->
-//            val updatedItem = currentState.itemBeingEdited.copy(category = category)
-//            currentState.copy(itemBeingEdited = updatedItem)
-//        }
-//    }
-
-    fun toggleUnitDropDownOpen(open: Boolean) {
-        _uiState.update { it.copy(unitDropDownExpanded = open) }
-    }
-    fun toggleUnitDropDownOpen() {
-        toggleUnitDropDownOpen(!_uiState.value.unitDropDownExpanded)
+    fun shopChosen(shop: String?) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                itemBeingEdited = currentState.itemBeingEdited
+                    .toBuilder()
+                    .setShop(shop ?: "")
+                    .build()
+            )
+        }
     }
 
-    fun toggleShopDropDownOpen(open:Boolean) {
-        _uiState.update { it.copy(shopDropDownExpanded = open) }
-    }
-    fun toggleShopDropDownOpen() {
-        toggleShopDropDownOpen(!_uiState.value.shopDropDownExpanded)
+    fun categoryChosen(category: String?) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                itemBeingEdited = currentState.itemBeingEdited
+                    .toBuilder()
+                    .setCategory(category ?: "")
+                    .build()
+            )
+        }
     }
 
-    fun toggleCategoryDropDownOpen(open:Boolean) {
-        _uiState.update { it.copy(categoryDropDownExpanded = open) }
+    fun toggleUnitDropDownOpen(open: Boolean? = null) {
+        _uiState.update { currentState ->
+            currentState.copy(unitDropDownExpanded = open ?: !currentState.unitDropDownExpanded)
+        }
     }
-    fun toggleCategoryDropDownOpen() {
-        toggleCategoryDropDownOpen(!_uiState.value.categoryDropDownExpanded)
+
+    fun toggleShopDropDownOpen(open:Boolean? = null) {
+        _uiState.update { currentState ->
+            currentState.copy(shopDropDownExpanded = open ?: !currentState.shopDropDownExpanded)
+        }
+    }
+    fun toggleCategoryDropDownOpen(open:Boolean? = null) {
+        _uiState.update { currentState ->
+            currentState.copy(categoryDropDownExpanded = open ?: !currentState.categoryDropDownExpanded)
+        }
     }
 }
-
-data class EditItemUiState(
-    val itemBeingEdited : ShoppingListItem,
-    val unitDropDownExpanded : Boolean = false,
-    val shopDropDownExpanded: Boolean = false,
-    val categoryDropDownExpanded: Boolean = false,
-)

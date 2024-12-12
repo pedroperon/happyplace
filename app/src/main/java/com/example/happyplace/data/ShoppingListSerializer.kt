@@ -18,7 +18,8 @@ object ShoppingListSerializer : Serializer<LocalShoppingList> {
         }
         catch (exception: InvalidProtocolBufferException) {
             throw CorruptionException("Cannot read proto.", exception)
-        }    }
+        }
+    }
 
     override suspend fun writeTo(t: LocalShoppingList, output: OutputStream) {
         t.writeTo(output)

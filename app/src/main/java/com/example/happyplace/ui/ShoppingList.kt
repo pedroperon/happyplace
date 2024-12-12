@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -44,10 +45,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.happyplace.ItemQuantity
 import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
+import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.ShoppingListViewModel
 import java.text.DateFormat
 import java.util.Date
@@ -57,19 +58,22 @@ import java.util.Date
 fun ShoppingList(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
-    viewModel: ShoppingListViewModel = viewModel()
+    viewModel: ShoppingListViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     var showDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false)}
-    var expandedItem by rememberSaveable { mutableStateOf<ShoppingListItem?>(null)}
+    var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0) }
+
 
     if (uiState.showEditItemDialog) {
         val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
         EditItemInShoppingListDialog(
             onDismissRequest = { viewModel.closeEditItemDialog() },
             onDone = { viewModel.saveItem(itemIndex, it) },
-            item = uiState.itemStagedForEdition
+            originalItem = uiState.itemStagedForEdition,
+            shops = uiState.shopsList,
+            categories = uiState.categoriesList
         )
     }
 
@@ -80,21 +84,20 @@ fun ShoppingList(
                 .verticalScroll(rememberScrollState())) {
 
             uiState.shoppingList.forEach { item ->
-                key(item.name+item.details) {
+                key(item.name + item.dateCreated) {
                     ShoppingListItemCard(
                         item = item,
                         toggleItemInCart = {
                             viewModel.toggleItemBought(it)
                         },
-                        expanded = (item==expandedItem),
+                        expanded = (expandedItemTimestamp!=0L && item.dateCreated==expandedItemTimestamp),
                         toggleExpandCard = {
-                            expandedItem = when(expandedItem) {
-                                item -> null
-                                else -> item
+                            expandedItemTimestamp = when(expandedItemTimestamp) {
+                                item.dateCreated -> 0
+                                else -> item.dateCreated
                             }
                         },
                         onEditItem = {
-                            viewModel.stageItem(it)
                             viewModel.openEditItemDialog(it)
                         },
                         onDeleteItem = {
@@ -210,18 +213,16 @@ fun ShoppingListItemCard(
                 )
             }
 
-            if (item.details != null)
+            if (!item.details.isNullOrEmpty())
                 Text(text = item.details, color = Color.Gray)
 
             if (expanded) {
                 if (item.bulk)
                     TagBox(text = stringResource(R.string.bulk))
 
-//                if (item.category != null)
-//                    TagBox(text = stringResource(item.category.nameId))
-//
-//                if (item.shop != null)
-//                    TagBox(text = stringResource(item.shop.nameId))
+                TagBox(text = item.category)
+
+                TagBox(text = item.shop)
 
                 Spacer(modifier = Modifier.weight(1F))
                 Text(
@@ -286,7 +287,10 @@ private fun bgColorForItem(item: ShoppingListItem): Color {
 }
 
 @Composable
-fun TagBox(text: String) {
+fun TagBox(text: String?) {
+    if(text.isNullOrEmpty())
+        return
+
     Box(contentAlignment = Alignment.Center,
         modifier = Modifier
             .padding(vertical = 4.dp)

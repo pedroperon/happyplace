@@ -69,7 +69,7 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
             currentData
                 .toBuilder()
                 .addItems(
-                    currentData.itemsList.filter{!it.isInCart}.size,
+                    0, // new items added to top of list
                     newItem.toBuilder().setDateCreated(System.currentTimeMillis()))
                 .build()
         }
@@ -79,8 +79,21 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
         shoppingListStore.updateData { currentData ->
             currentData
                 .toBuilder()
-                .setItems(itemIndex,item) //setItems se for edit
+                .setItems(itemIndex,item)
                 .build()
+        }
+    }
+
+    suspend fun updateShopsAndCategoriesLists(shopName: String, categoryName: String) {
+        shoppingListStore.updateData { currentData ->
+            val builder = currentData.toBuilder()
+            if(!currentData.categoriesList.contains(categoryName.trim())) {
+                builder.addCategories(categoryName.trim())
+            }
+            if(!currentData.shopsList.contains(shopName.trim())) {
+                builder.addShops(shopName.trim())
+            }
+            builder.build()
         }
     }
 }

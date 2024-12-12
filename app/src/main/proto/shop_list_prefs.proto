@@ -22,8 +22,8 @@ message ShoppingListItem {
   bool isInCart = 5;
   int64 dateCreated = 7;
   ItemQuantity quantity = 8;
-//  ItemCategory category = 9;
-//  Shop shop = 10;
+  string shop = 9;
+  string category = 10;
 }
 
 message LocalShoppingList {

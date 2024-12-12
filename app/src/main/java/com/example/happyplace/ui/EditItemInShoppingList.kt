@@ -20,9 +20,15 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -40,31 +46,22 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.happyplace.ItemQuantity.MeasurementUnit
 import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
-import com.example.happyplace.copy
 import com.example.happyplace.model.EditItemUiState
 import com.example.happyplace.model.EditItemViewModel
-import com.example.happyplace.model.ItemCategory
-import com.example.happyplace.model.Shop
-
-
-/*  OK val name : String,
-    OK val quantity : ItemQuantity? = null,
-    OK val details : String? = "",
-    OK val bulk : Boolean? = false,
-    >> val category : ItemCategory? = null,
-    >> val shop : Shop? = null,
- */
+import com.example.happyplace.model.ShoppingListUiState
 
 @Composable
 fun EditItemInShoppingListDialog(
-    onDismissRequest: ()->Unit,
-    onDone: (ShoppingListItem)->Unit,
-    item: ShoppingListItem?
+    onDismissRequest: () -> Unit,
+    onDone: (ShoppingListItem) -> Unit,
+    shops: List<String>,
+    categories: List<String>,
+    originalItem: ShoppingListItem?,
 ) {
-    val isNewItem = item?.name?.isEmpty() ?: true
-
-    val viewModel = EditItemViewModel(item?.copy{} ?: ShoppingListItem.newBuilder().build())
+    val viewModel = EditItemViewModel(originalItem)
     val editItemUiState by viewModel.uiState.collectAsState()
+
+    val isNewItem = originalItem?.name.isNullOrEmpty()
 
     Dialog(
         onDismissRequest = onDismissRequest,
@@ -158,12 +155,23 @@ fun EditItemInShoppingListDialog(
                 }
 
                 // CATEGORY
-                CategoryDropdownMenu(viewModel,editItemUiState)
-                
+                OptionsDropdownMenu(
+                    title = stringResource(R.string.category),
+                    options = categories,
+                    onChooseOption = { viewModel.categoryChosen(it) },
+                    currentOptionName = editItemUiState.itemBeingEdited.category,
+                    expanded = editItemUiState.categoryDropDownExpanded,
+                    onToggleExpanded = { viewModel.toggleCategoryDropDownOpen(it) }
+                )
+
                 // SHOP
-                ShopDropdownMenu(
-                    viewModel = viewModel,
-                    uiState = editItemUiState
+                OptionsDropdownMenu(
+                    title = stringResource(R.string.shop),
+                    options = shops,
+                    onChooseOption = { viewModel.shopChosen(it) },
+                    currentOptionName = editItemUiState.itemBeingEdited.shop,
+                    expanded = editItemUiState.shopDropDownExpanded,
+                    onToggleExpanded = { viewModel.toggleShopDropDownOpen(it) }
                 )
                 
                 // BUTTONS CANCEL / DONE
@@ -194,95 +202,83 @@ fun toStringEmptyIfZero(amount: Number): String {
 }
 
 @Composable
-fun ShopDropdownMenu(
-    modifier: Modifier = Modifier,
-    viewModel: EditItemViewModel,
-    uiState: EditItemUiState
-) {
-    Box(modifier = modifier) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.clickable(onClick = {viewModel.toggleShopDropDownOpen()})
-        ) {
-            Text(text = stringResource(R.string.shop))
-            Text(
-                text = "Loja"//stringResource(uiState.itemBeingEdited.shop?.nameId ?: R.string.none)
-            )
-            Image(
-                painter = painterResource(R.drawable.baseline_arrow_right_24),
-                contentDescription = stringResource(R.string.expand_list),
-                modifier = Modifier.rotate(if (uiState.shopDropDownExpanded) 270F else 90F)
-            )
-        }
-        DropdownMenu(
-            expanded = uiState.shopDropDownExpanded,
-            onDismissRequest = { viewModel.toggleShopDropDownOpen(false) }
-        ) {
-            DropdownMenuItem(
-                text = {
-                    Text(text = stringResource(R.string.none))
-                },
-                onClick = {
-//                    viewModel.shopChosen(null)
-                }
-            )
-            Shop.entries.forEach {
-                DropdownMenuItem(
-                    text = {
-                        Text(text = stringResource(it.nameId))
-                    },
-                    onClick = {
-//                        viewModel.shopChosen(it)
-                    }
-                )
-            }
-        }
-    }
-}
+fun OptionsDropdownMenu(
+    title: String,
+    options: List<String>,
+    currentOptionName: String?,
+    onChooseOption: (String?)->Unit,
+    expanded: Boolean,
+    onToggleExpanded: (Boolean?)->Unit,
+    modifier: Modifier = Modifier
+    ) {
+    var newOptionName by rememberSaveable { mutableStateOf("") }
 
-@Composable
-fun CategoryDropdownMenu(viewModel: EditItemViewModel,
-                         uiState: EditItemUiState,
-                         modifier: Modifier = Modifier) {
+    val dismiss = {
+        onToggleExpanded(false)
+        newOptionName = ""
+    }
+
     Box(modifier = modifier) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.clickable(onClick = {viewModel.toggleCategoryDropDownOpen()})
+            modifier = Modifier.clickable(onClick = {onToggleExpanded(null)})
         ) {
-            Text(text = stringResource(R.string.category))
-            Text(
-                text = "categoria" //stringResource(uiState.itemBeingEdited.category?.nameId ?: R.string.none)
-            )
+            Text(text = title)
+            Text(text = currentOptionName ?: stringResource(R.string.none))
             Image(
                 painter = painterResource(R.drawable.baseline_arrow_right_24),
                 contentDescription = stringResource(R.string.expand_list),
-                modifier = Modifier.rotate(if (uiState.categoryDropDownExpanded) 270F else 90F)
+                modifier = Modifier.rotate(if (expanded) 270F else 90F)
             )
         }
         DropdownMenu(
-            expanded = uiState.categoryDropDownExpanded,
-            onDismissRequest = { viewModel.toggleCategoryDropDownOpen(false) }
+            expanded = expanded,
+            onDismissRequest = dismiss
         ) {
             DropdownMenuItem(
                 text = {
                     Text(text = stringResource(R.string.none))
                 },
                 onClick = {
-//                    viewModel.categoryChosen(null)
+                    onChooseOption(null)
                 }
             )
-            ItemCategory.entries.forEach {
+            options.forEach {
                 DropdownMenuItem(
                     text = {
-                        Text(text = stringResource(it.nameId))
+                        Text(text = it)
                     },
                     onClick = {
-//                        viewModel.categoryChosen(it)
+                        onChooseOption(it)
+                        dismiss()
                     }
                 )
             }
+            DropdownMenuItem(
+                onClick = {},
+                text = {
+                    TextField( // add new shop
+                        value = newOptionName,
+                        onValueChange = { newOptionName = it },
+                        //shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Done,
+                            capitalization = KeyboardCapitalization.Words
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                onChooseOption(newOptionName)
+                                dismiss() //onToggleExpanded(false)
+                            }
+                        ),
+                        label = { Text(text = stringResource(R.string.create_new)) },
+                        //modifier = Modifier.fillMaxWidth(0.5F)
+                    )
+                }
+            )
         }
     }
 }
@@ -302,9 +298,6 @@ private fun UnitDropdownMenu(
             ) {
                 Text(
                     text = editItemUiState.itemBeingEdited.quantity.unit.name.lowercase()
-//                    stringResource(
-//                        editItemUiState.itemBeingEdited.quantity.unit.namePluralStringId
-//                    )
                 )
                 Image(
                     painter = painterResource(R.drawable.baseline_arrow_right_24),

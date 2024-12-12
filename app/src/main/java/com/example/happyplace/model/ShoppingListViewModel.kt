@@ -1,5 +1,6 @@
 package com.example.happyplace.model
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.liveData
@@ -65,6 +66,8 @@ class ShoppingListViewModel(
                 shoppingListRepository.updateItem(newItem, itemIndex)
             else
                 shoppingListRepository.saveNewItem(newItem)
+
+            shoppingListRepository.updateShopsAndCategoriesLists(newItem.shop, newItem.category)
         }
     }
 
