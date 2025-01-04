@@ -1,7 +1,7 @@
 package com.example.happyplace.model
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
@@ -17,13 +17,14 @@ import kotlinx.coroutines.launch
 data class ShoppingListUiState(
     val shoppingList: List<ShoppingListItem> = listOf(),
     val showEditItemDialog: Boolean = false,
+    val showDeleteConfirmationDialog: Boolean = false,
     val itemStagedForEdition: ShoppingListItem? = null,
     val shopsList: List<String> = listOf(),
     val categoriesList: List<String> = listOf()
 )
 
 class ShoppingListViewModel(
-    private val shoppingListRepository : ShoppingListRepository,
+    private val shoppingListRepository : ShoppingListRepository
 ) : ViewModel() {
 
     val initialSetupEvent = liveData {
@@ -41,6 +42,24 @@ class ShoppingListViewModel(
         }
     }
 
+    fun showDeleteConfirmationDialog(item: ShoppingListItem) {
+        _uiState.update {
+            it.copy(
+                itemStagedForEdition = item,
+                showDeleteConfirmationDialog = true
+            )
+        }
+    }
+
+    fun dismissDeleteConfirmationDialog() {
+        _uiState.update {
+            it.copy(
+                itemStagedForEdition = null,
+                showDeleteConfirmationDialog = false
+            )
+        }
+    }
+
     fun deleteStagedItem() {
         deleteItem(_uiState.value.itemStagedForEdition)
     }
@@ -50,13 +69,10 @@ class ShoppingListViewModel(
             return
         viewModelScope.launch {
             shoppingListRepository.deleteItem(item)
-            _uiState.update { it.copy(itemStagedForEdition = null) }
-        }
-    }
-
-    fun stageItem(item: ShoppingListItem?) {
-        _uiState.update {
-            it.copy(itemStagedForEdition = item)
+            _uiState.update { it.copy(
+                itemStagedForEdition = null,
+                showDeleteConfirmationDialog = false
+            ) }
         }
     }
 
@@ -75,15 +91,19 @@ class ShoppingListViewModel(
         openEditItemDialog(null)
     }
     fun openEditItemDialog(item:ShoppingListItem?) {
-        stageItem(item)
         _uiState.update {
-            it.copy(showEditItemDialog = true)
+            it.copy(
+                itemStagedForEdition = item,
+                showEditItemDialog = true
+            )
         }
     }
-
     fun closeEditItemDialog() {
         _uiState.update {
-            it.copy(showEditItemDialog = false)
+            it.copy(
+                showEditItemDialog = false,
+                itemStagedForEdition = null
+            )
         }
     }
 
@@ -98,3 +118,15 @@ class ShoppingListViewModel(
     }
 }
 
+class ShoppingListViewModelFactory(
+    private val shoppingListRepository : ShoppingListRepository
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ShoppingListViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ShoppingListViewModel(shoppingListRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

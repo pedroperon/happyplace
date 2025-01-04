@@ -29,13 +29,15 @@ fun HappyPlaceApp(
     windowSize: WindowWidthSizeClass,
     modifier: Modifier = Modifier) {
 
-//    val shoppingListViewModel: ShoppingListViewModel = viewModel()
-
     Scaffold(
         topBar = {
             HappyPlaceAppBar()
         },
-        floatingActionButton = { AddItemFloatingActionButton(onClick = { shoppingListViewModel.openNewItemDialog() }) }
+        floatingActionButton = {
+            AddItemFloatingActionButton(
+                onClick = { shoppingListViewModel.openNewItemDialog() }
+            )
+        }
     ) { innerPadding ->
 
         ShoppingList(

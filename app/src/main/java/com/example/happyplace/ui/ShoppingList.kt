@@ -31,7 +31,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,16 +42,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.happyplace.ItemQuantity
 import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
-import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.ShoppingListViewModel
 import java.text.DateFormat
 import java.util.Date
-
 
 @Composable
 fun ShoppingList(
@@ -62,9 +60,7 @@ fun ShoppingList(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    var showDeleteConfirmationDialog by rememberSaveable { mutableStateOf(false)}
     var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0) }
-
 
     if (uiState.showEditItemDialog) {
         val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
@@ -93,7 +89,7 @@ fun ShoppingList(
                         expanded = (expandedItemTimestamp!=0L && item.dateCreated==expandedItemTimestamp),
                         toggleExpandCard = {
                             expandedItemTimestamp = when(expandedItemTimestamp) {
-                                item.dateCreated -> 0
+                                item.dateCreated -> 0L
                                 else -> item.dateCreated
                             }
                         },
@@ -101,8 +97,7 @@ fun ShoppingList(
                             viewModel.openEditItemDialog(it)
                         },
                         onDeleteItem = {
-                            viewModel.stageItem(it)
-                            showDeleteConfirmationDialog = true
+                            viewModel.showDeleteConfirmationDialog(it)
                         }
                     )
                 }
@@ -111,16 +106,14 @@ fun ShoppingList(
         }
     }
 
-    if(showDeleteConfirmationDialog) {
+    if(uiState.showDeleteConfirmationDialog) {
         DeleteWarningPopupDialog(
             itemName = uiState.itemStagedForEdition?.name,
             onDismissRequest = {
-                viewModel.stageItem(null)
-                showDeleteConfirmationDialog = false
+                viewModel.dismissDeleteConfirmationDialog()
             },
             onConfirm = {
                 viewModel.deleteStagedItem()
-                showDeleteConfirmationDialog = false
             }
         )
     }
@@ -224,7 +217,7 @@ fun ShoppingListItemCard(
 
                 TagBox(text = item.shop)
 
-                Spacer(modifier = Modifier.weight(1F))
+                Spacer(modifier = Modifier.weight(1F).fillMaxHeight())
                 Text(
                     text = stringResource(
                         R.string.added_on_date,
@@ -321,10 +314,8 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?,
 
     val isPlural = itemQuantity.amount>1
     val t = "${itemQuantity.amount} " +
-//            stringResource(
                 if(isPlural) itemQuantity.unit.name.lowercase()//PluralStringId
                 else itemQuantity.unit.name.lowercase()//SingularStringId
-//            )
 
     Text(
         text = "($t)",
@@ -334,12 +325,19 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?,
     )
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun ShoppingListItemCardPreview() {
-//    ShoppingListItemCard(item = LocalShoppingListDataProvider.shoppingList.collectLatest {  }
-//        expanded = true,
-//        toggleExpandCard = {},
-//        toggleItemInCart = {}
-//    )
-//}
+@Preview(showBackground = true)
+@Composable
+fun ShoppingListItemCardPreview() {
+    ShoppingListItemCard(
+        item = ShoppingListItem.newBuilder().apply {
+            name = "Arroz integral"
+            details = "camargue"
+            quantity = ItemQuantity.newBuilder().setAmount(1).setUnitValue(2).build()
+            category = "Food"
+            shop = "Cagette"
+        }.build(),
+        expanded = true,
+        toggleExpandCard = {},
+        toggleItemInCart = {}
+    )
+}

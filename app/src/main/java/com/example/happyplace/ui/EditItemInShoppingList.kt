@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -25,10 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -43,12 +43,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.happyplace.ItemQuantity.MeasurementUnit
 import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.model.EditItemUiState
 import com.example.happyplace.model.EditItemViewModel
-import com.example.happyplace.model.ShoppingListUiState
 
 @Composable
 fun EditItemInShoppingListDialog(
@@ -57,8 +57,10 @@ fun EditItemInShoppingListDialog(
     shops: List<String>,
     categories: List<String>,
     originalItem: ShoppingListItem?,
+    viewModel: EditItemViewModel = viewModel()
 ) {
-    val viewModel = EditItemViewModel(originalItem)
+    viewModel.setItemBeingEdited(originalItem)
+
     val editItemUiState by viewModel.uiState.collectAsState()
 
     val isNewItem = originalItem?.name.isNullOrEmpty()
@@ -77,6 +79,7 @@ fun EditItemInShoppingListDialog(
                 modifier = Modifier
                     .background(Color.White)
                     .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 Text(
                     text = stringResource(if(isNewItem) R.string.add_item else R.string.edit_item),
@@ -242,6 +245,7 @@ fun OptionsDropdownMenu(
                 },
                 onClick = {
                     onChooseOption(null)
+                    dismiss()
                 }
             )
             options.forEach {
@@ -310,17 +314,19 @@ private fun UnitDropdownMenu(
             expanded = editItemUiState.unitDropDownExpanded,
             onDismissRequest = { viewModel.toggleUnitDropDownOpen(false) }
         ) {
-            MeasurementUnit.entries.forEach {
-                DropdownMenuItem(
-                    text = {
-                        Text(text = it.name.lowercase())//stringResource(it.nameSingularStringId))
-                    },
-                    onClick = {
-                        viewModel.quantityUnitChosen(it)
-                        viewModel.toggleUnitDropDownOpen(false)
-                    }
-                )
-            }
+            MeasurementUnit.entries
+                .subList(0, MeasurementUnit.entries.size - 1) // excludes automatically generated UNRECOGNIZED
+                .forEach {
+                    DropdownMenuItem(
+                        text = {
+                            Text(text = it.name.lowercase())
+                        },
+                        onClick = {
+                            viewModel.quantityUnitChosen(it)
+                            viewModel.toggleUnitDropDownOpen(false)
+                        }
+                    )
+                }
         }
     }
 }

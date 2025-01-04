@@ -10,9 +10,11 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
+import androidx.lifecycle.ViewModelProvider
 import com.example.happyplace.data.ShoppingListRepository
 import com.example.happyplace.data.ShoppingListSerializer
 import com.example.happyplace.model.ShoppingListViewModel
+import com.example.happyplace.model.ShoppingListViewModelFactory
 import com.example.happyplace.ui.HappyPlaceApp
 import com.example.happyplace.ui.theme.HappyPlaceTheme
 
@@ -32,9 +34,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        shoppingListViewModel = ShoppingListViewModel(
-            ShoppingListRepository(shoppingListStore)
-        )
+        shoppingListViewModel =
+            ViewModelProvider(
+            this,
+            ShoppingListViewModelFactory(
+                ShoppingListRepository(shoppingListStore)
+            )
+        )[ShoppingListViewModel::class.java]
 
         shoppingListViewModel.initialSetupEvent.observe(this) { initialSetupEvent ->
             shoppingListViewModel.setShoppingList(initialSetupEvent)

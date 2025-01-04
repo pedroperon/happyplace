@@ -1,11 +1,9 @@
 package com.example.happyplace.model
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.happyplace.ItemQuantity
 import com.example.happyplace.ItemQuantity.MeasurementUnit
 import com.example.happyplace.ShoppingListItem
-import com.example.happyplace.copy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,14 +19,18 @@ data class EditItemUiState(
     val categoryDropDownExpanded: Boolean = false,
 )
 
-class EditItemViewModel(item : ShoppingListItem?) : ViewModel() {
+class EditItemViewModel : ViewModel() {
+
     private val _uiState = MutableStateFlow(
-        EditItemUiState(
-            item ?: ShoppingListItem.newBuilder().build()
-        )
+        EditItemUiState(getNewBlankShoppingListItem())
     )
     val uiState: StateFlow<EditItemUiState> = _uiState.asStateFlow()
 
+    fun setItemBeingEdited(originalItem: ShoppingListItem?) {
+        _uiState.update {
+            it.copy(itemBeingEdited = originalItem ?: getNewBlankShoppingListItem())
+        }
+    }
 
     fun updateName(newName: String) {
         if (newName.length > NAME_MAX_CHARS)
@@ -111,7 +113,7 @@ class EditItemViewModel(item : ShoppingListItem?) : ViewModel() {
             currentState.copy(
                 itemBeingEdited = currentState.itemBeingEdited
                     .toBuilder()
-                    .setShop(shop ?: "")
+                    .setShop(shop?.trim() ?: "")
                     .build()
             )
         }
@@ -122,7 +124,7 @@ class EditItemViewModel(item : ShoppingListItem?) : ViewModel() {
             currentState.copy(
                 itemBeingEdited = currentState.itemBeingEdited
                     .toBuilder()
-                    .setCategory(category ?: "")
+                    .setCategory(category?.trim() ?: "")
                     .build()
             )
         }
@@ -144,4 +146,8 @@ class EditItemViewModel(item : ShoppingListItem?) : ViewModel() {
             currentState.copy(categoryDropDownExpanded = open ?: !currentState.categoryDropDownExpanded)
         }
     }
+}
+
+private fun getNewBlankShoppingListItem(): ShoppingListItem {
+    return ShoppingListItem.newBuilder().setDateCreated(System.currentTimeMillis()).build()
 }

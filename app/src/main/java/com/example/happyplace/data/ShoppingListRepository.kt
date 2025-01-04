@@ -39,7 +39,7 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
                     if(isInCart) 0
                     else currentData.itemsList.filter{!it.isInCart}.size
 
-                if(newIndex>=index) // account for to-be-removed item at index
+                if(newIndex>index) // account for to-be-removed item at index
                     newIndex--
 
                 currentData
@@ -85,15 +85,20 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
     }
 
     suspend fun updateShopsAndCategoriesLists(shopName: String, categoryName: String) {
+        val trimmedCategoryName = categoryName.trim()
+        val trimmedShopName = shopName.trim()
+
         shoppingListStore.updateData { currentData ->
-            val builder = currentData.toBuilder()
-            if(!currentData.categoriesList.contains(categoryName.trim())) {
-                builder.addCategories(categoryName.trim())
-            }
-            if(!currentData.shopsList.contains(shopName.trim())) {
-                builder.addShops(shopName.trim())
-            }
-            builder.build()
+            currentData.toBuilder().apply {
+                if (trimmedCategoryName.isNotEmpty() &&
+                    !currentData.categoriesList.contains(trimmedCategoryName)) {
+                    addCategories(trimmedCategoryName)
+                }
+                if (trimmedShopName.isNotEmpty() &&
+                    !currentData.shopsList.contains(trimmedShopName)) {
+                    addShops(trimmedShopName)
+                }
+            }.build()
         }
     }
 }

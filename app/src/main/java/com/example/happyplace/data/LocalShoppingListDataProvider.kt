@@ -4,9 +4,6 @@ import com.example.happyplace.LocalShoppingList
 import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.ItemQuantity
 import com.example.happyplace.ItemQuantity.MeasurementUnit
-import com.example.happyplace.model.ItemCategory
-//import com.example.happyplace.model.ItemQuantity
-import com.example.happyplace.model.Shop
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
