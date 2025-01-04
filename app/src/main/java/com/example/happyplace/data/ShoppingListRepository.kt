@@ -101,4 +101,10 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
             }.build()
         }
     }
+
+    suspend fun clearList() {
+        shoppingListStore.updateData { currentData ->
+            currentData.toBuilder().clearItems().build()
+        }
+    }
 }

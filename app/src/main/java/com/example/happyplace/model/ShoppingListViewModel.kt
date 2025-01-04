@@ -18,6 +18,7 @@ data class ShoppingListUiState(
     val shoppingList: List<ShoppingListItem> = listOf(),
     val showEditItemDialog: Boolean = false,
     val showDeleteConfirmationDialog: Boolean = false,
+    val showClearAllConfirmationDialog: Boolean = false,
     val itemStagedForEdition: ShoppingListItem? = null,
     val shopsList: List<String> = listOf(),
     val categoriesList: List<String> = listOf()
@@ -51,11 +52,20 @@ class ShoppingListViewModel(
         }
     }
 
+    fun showClearAllConfirmationDialog() {
+        _uiState.update {
+            it.copy(
+                showClearAllConfirmationDialog = true
+            )
+        }
+    }
+
     fun dismissDeleteConfirmationDialog() {
         _uiState.update {
             it.copy(
                 itemStagedForEdition = null,
-                showDeleteConfirmationDialog = false
+                showDeleteConfirmationDialog = false,
+                showClearAllConfirmationDialog = false
             )
         }
     }
@@ -116,6 +126,15 @@ class ShoppingListViewModel(
             )
         }
     }
+
+    fun deleteAllItems() {
+        viewModelScope.launch {
+            shoppingListRepository.clearList()
+            _uiState.update { it.copy(
+                itemStagedForEdition = null,
+                showClearAllConfirmationDialog = false
+            ) }
+        }    }
 }
 
 class ShoppingListViewModelFactory(

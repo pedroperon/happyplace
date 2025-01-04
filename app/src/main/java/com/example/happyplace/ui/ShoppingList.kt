@@ -3,6 +3,7 @@ package com.example.happyplace.ui
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,15 +12,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.example.happyplace.ItemQuantity
 import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
+import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.ShoppingListViewModel
 import java.text.DateFormat
 import java.util.Date
@@ -62,6 +68,63 @@ fun ShoppingList(
 
     var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0) }
 
+//    val editItemViewModel = EditItemViewModel()
+
+    Box(modifier = modifier
+        .padding(contentPadding)
+        .fillMaxWidth()
+        .wrapContentSize()
+    ) {
+        if(uiState.shoppingList.isEmpty()) {
+            Text(
+                text = "Your shopping list is empty.\nTap \"Add item\" to start",
+                textAlign = TextAlign.Center,
+                color = Color.DarkGray
+            )
+        }
+        else {
+            Column {
+
+                ShoppingListOptionsBar(
+                    onClickDeleteAll = { viewModel.showClearAllConfirmationDialog() },
+                    onClickFilter = {}
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    uiState.shoppingList.forEach { item ->
+                        key(item.name + item.dateCreated) {
+                            ShoppingListItemCard(
+                                item = item,
+                                toggleItemInCart = {
+                                    viewModel.toggleItemBought(it)
+                                },
+                                expanded = (expandedItemTimestamp != 0L && item.dateCreated == expandedItemTimestamp),
+                                toggleExpandCard = {
+                                    expandedItemTimestamp = when (expandedItemTimestamp) {
+                                        item.dateCreated -> 0L
+                                        else -> item.dateCreated
+                                    }
+                                },
+                                onEditItem = {
+                                    viewModel.openEditItemDialog(it)
+//                                    editItemViewModel.setItemBeingEdited(it)
+                                },
+                                onDeleteItem = {
+                                    viewModel.showDeleteConfirmationDialog(it)
+                                }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
+            }
+        }
+    }
+
     if (uiState.showEditItemDialog) {
         val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
         EditItemInShoppingListDialog(
@@ -69,41 +132,8 @@ fun ShoppingList(
             onDone = { viewModel.saveItem(itemIndex, it) },
             originalItem = uiState.itemStagedForEdition,
             shops = uiState.shopsList,
-            categories = uiState.categoriesList
+            categories = uiState.categoriesList,
         )
-    }
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier
-                .padding(contentPadding)
-                .verticalScroll(rememberScrollState())) {
-
-            uiState.shoppingList.forEach { item ->
-                key(item.name + item.dateCreated) {
-                    ShoppingListItemCard(
-                        item = item,
-                        toggleItemInCart = {
-                            viewModel.toggleItemBought(it)
-                        },
-                        expanded = (expandedItemTimestamp!=0L && item.dateCreated==expandedItemTimestamp),
-                        toggleExpandCard = {
-                            expandedItemTimestamp = when(expandedItemTimestamp) {
-                                item.dateCreated -> 0L
-                                else -> item.dateCreated
-                            }
-                        },
-                        onEditItem = {
-                            viewModel.openEditItemDialog(it)
-                        },
-                        onDeleteItem = {
-                            viewModel.showDeleteConfirmationDialog(it)
-                        }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(100.dp))
-        }
     }
 
     if(uiState.showDeleteConfirmationDialog) {
@@ -118,6 +148,51 @@ fun ShoppingList(
         )
     }
 
+    if(uiState.showClearAllConfirmationDialog) {
+        DeleteWarningPopupDialog(
+            itemName = "all items on the list",
+            onDismissRequest = {
+                viewModel.dismissDeleteConfirmationDialog()
+            },
+            onConfirm = {
+                viewModel.deleteAllItems()
+            }
+        )
+    }
+
+}
+
+@Composable
+fun ShoppingListOptionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
+
+    Row(horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+            .background(color = Color.LightGray)
+            .padding(8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onClickFilter() }
+        ) {
+            Icon(
+                Icons.Filled.Menu,
+                stringResource(R.string.filter_options),
+                tint = Color.Gray
+            )
+            Text(text = stringResource(R.string.filter), color = Color.Gray)
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onClickDeleteAll() }
+        ) {
+            Icon(
+                Icons.Filled.Delete,
+                stringResource(R.string.clear_list),
+                tint = Color.Gray
+            )
+            Text(text = stringResource(R.string.clear_list), color = Color.Gray)
+        }
+    }
 }
 
 @Composable
@@ -217,7 +292,9 @@ fun ShoppingListItemCard(
 
                 TagBox(text = item.shop)
 
-                Spacer(modifier = Modifier.weight(1F).fillMaxHeight())
+                Spacer(modifier = Modifier
+                    .weight(1F)
+                    .fillMaxHeight())
                 Text(
                     text = stringResource(
                         R.string.added_on_date,

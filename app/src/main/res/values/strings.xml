@@ -38,4 +38,7 @@
     <string name="none">"(none)"</string>
     <string name="shop">Shop:</string>
     <string name="category">Category:</string>
+    <string name="filter">Filter</string>
+    <string name="filter_options">Filter options</string>
+    <string name="clear_list">Clear list</string>
 </resources>
