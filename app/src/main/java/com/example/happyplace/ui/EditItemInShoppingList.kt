@@ -57,11 +57,9 @@ fun EditItemInShoppingListDialog(
     shops: List<String>,
     categories: List<String>,
     originalItem: ShoppingListItem?,
-    viewModel: EditItemViewModel = viewModel()
+    viewModel: EditItemViewModel
 ) {
     val editItemUiState by viewModel.uiState.collectAsState()
-
-    viewModel.setItemBeingEdited(originalItem)
 
     val isNewItem = originalItem?.name.isNullOrEmpty()
 

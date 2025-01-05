@@ -55,6 +55,7 @@ import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.ShoppingListViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.DateFormat
 import java.util.Date
 
@@ -62,7 +63,8 @@ import java.util.Date
 fun ShoppingList(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
-    viewModel: ShoppingListViewModel
+    viewModel: ShoppingListViewModel,
+    editItemViewModel: EditItemViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -109,11 +111,11 @@ fun ShoppingList(
                                         else -> item.dateCreated
                                     }
                                 },
-                                onEditItem = {
+                                onClickEditItem = {
                                     viewModel.openEditItemDialog(it)
-//                                    editItemViewModel.setItemBeingEdited(it)
+                                    editItemViewModel.setItemBeingEdited(it)
                                 },
-                                onDeleteItem = {
+                                onClickDeleteItem = {
                                     viewModel.showDeleteConfirmationDialog(it)
                                 }
                             )
@@ -128,11 +130,15 @@ fun ShoppingList(
     if (uiState.showEditItemDialog) {
         val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
         EditItemInShoppingListDialog(
-            onDismissRequest = { viewModel.closeEditItemDialog() },
+            onDismissRequest = {
+                viewModel.closeEditItemDialog()
+                editItemViewModel.setItemBeingEdited(null)
+            },
             onDone = { viewModel.saveItem(itemIndex, it) },
             originalItem = uiState.itemStagedForEdition,
             shops = uiState.shopsList,
             categories = uiState.categoriesList,
+            viewModel = editItemViewModel
         )
     }
 
@@ -237,8 +243,8 @@ fun ShoppingListItemCard(
     expanded: Boolean = false,
     toggleExpandCard: (ShoppingListItem)->Unit,
     modifier: Modifier = Modifier,
-    onEditItem: (ShoppingListItem)->Unit = {},
-    onDeleteItem: (ShoppingListItem)->Unit = {}
+    onClickEditItem: (ShoppingListItem)->Unit = {},
+    onClickDeleteItem: (ShoppingListItem)->Unit = {}
 ) {
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -325,13 +331,13 @@ fun ShoppingListItemCard(
             Spacer(Modifier.weight(1F))
             if (expanded && !item.isInCart) {
                 Row(horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = { onEditItem(item) }) {
+                    IconButton(onClick = { onClickEditItem(item) }) {
                         Icon(Icons.Filled.Edit,
                             stringResource(R.string.edit),
                             tint = Color.Gray
                         )
                     }
-                    IconButton(onClick = { onDeleteItem(item) }) {
+                    IconButton(onClick = { onClickDeleteItem(item) }) {
                         Icon(Icons.Filled.Delete,
                             stringResource(R.string.delete),
                             tint = Color.Gray
