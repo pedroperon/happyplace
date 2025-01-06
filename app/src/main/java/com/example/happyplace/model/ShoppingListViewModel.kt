@@ -14,11 +14,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class PopupDisplayState {
+    NONE,
+    DELETE_ITEM,
+    CLEAR_LIST,
+    EDIT_ITEM
+}
+
 data class ShoppingListUiState(
     val shoppingList: List<ShoppingListItem> = listOf(),
-    val showEditItemDialog: Boolean = false,
-    val showDeleteConfirmationDialog: Boolean = false,
-    val showClearAllConfirmationDialog: Boolean = false,
+    val popupDisplayState: PopupDisplayState = PopupDisplayState.NONE,
     val itemStagedForEdition: ShoppingListItem? = null,
     val shopsList: List<String> = listOf(),
     val categoriesList: List<String> = listOf()
@@ -47,7 +52,7 @@ class ShoppingListViewModel(
         _uiState.update {
             it.copy(
                 itemStagedForEdition = item,
-                showDeleteConfirmationDialog = true
+                popupDisplayState = PopupDisplayState.DELETE_ITEM,
             )
         }
     }
@@ -55,7 +60,7 @@ class ShoppingListViewModel(
     fun showClearAllConfirmationDialog() {
         _uiState.update {
             it.copy(
-                showClearAllConfirmationDialog = true
+                popupDisplayState = PopupDisplayState.CLEAR_LIST
             )
         }
     }
@@ -64,8 +69,7 @@ class ShoppingListViewModel(
         _uiState.update {
             it.copy(
                 itemStagedForEdition = null,
-                showDeleteConfirmationDialog = false,
-                showClearAllConfirmationDialog = false
+                popupDisplayState = PopupDisplayState.NONE
             )
         }
     }
@@ -81,7 +85,7 @@ class ShoppingListViewModel(
             shoppingListRepository.deleteItem(item)
             _uiState.update { it.copy(
                 itemStagedForEdition = null,
-                showDeleteConfirmationDialog = false
+                popupDisplayState = PopupDisplayState.NONE
             ) }
         }
     }
@@ -104,14 +108,14 @@ class ShoppingListViewModel(
         _uiState.update {
             it.copy(
                 itemStagedForEdition = item,
-                showEditItemDialog = true
+                popupDisplayState = PopupDisplayState.EDIT_ITEM
             )
         }
     }
     fun closeEditItemDialog() {
         _uiState.update {
             it.copy(
-                showEditItemDialog = false,
+                popupDisplayState = PopupDisplayState.NONE,
                 itemStagedForEdition = null
             )
         }
@@ -132,9 +136,10 @@ class ShoppingListViewModel(
             shoppingListRepository.clearList()
             _uiState.update { it.copy(
                 itemStagedForEdition = null,
-                showClearAllConfirmationDialog = false
+                popupDisplayState = PopupDisplayState.NONE,
             ) }
-        }    }
+        }
+    }
 }
 
 class ShoppingListViewModelFactory(

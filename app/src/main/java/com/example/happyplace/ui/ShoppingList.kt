@@ -56,6 +56,7 @@ import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.ShoppingListViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.happyplace.model.PopupDisplayState
 import java.text.DateFormat
 import java.util.Date
 
@@ -69,8 +70,6 @@ fun ShoppingList(
     val uiState by viewModel.uiState.collectAsState()
 
     var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0) }
-
-//    val editItemViewModel = EditItemViewModel()
 
     Box(modifier = modifier
         .padding(contentPadding)
@@ -127,43 +126,52 @@ fun ShoppingList(
         }
     }
 
-    if (uiState.showEditItemDialog) {
-        val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
-        EditItemInShoppingListDialog(
-            onDismissRequest = {
-                viewModel.closeEditItemDialog()
-                editItemViewModel.setItemBeingEdited(null)
-            },
-            onDone = { viewModel.saveItem(itemIndex, it) },
-            originalItem = uiState.itemStagedForEdition,
-            shops = uiState.shopsList,
-            categories = uiState.categoriesList,
-            viewModel = editItemViewModel
-        )
-    }
+    when(uiState.popupDisplayState) {
 
-    if(uiState.showDeleteConfirmationDialog) {
-        DeleteWarningPopupDialog(
-            itemName = uiState.itemStagedForEdition?.name,
-            onDismissRequest = {
-                viewModel.dismissDeleteConfirmationDialog()
-            },
-            onConfirm = {
-                viewModel.deleteStagedItem()
-            }
-        )
-    }
+        PopupDisplayState.EDIT_ITEM -> {
+            // show edit / create item dialog
+            val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
+            EditItemInShoppingListDialog(
+                onDismissRequest = {
+                    viewModel.closeEditItemDialog()
+                    editItemViewModel.setItemBeingEdited(null)
+                },
+                onDone = { viewModel.saveItem(itemIndex, it) },
+                originalItem = uiState.itemStagedForEdition,
+                shops = uiState.shopsList,
+                categories = uiState.categoriesList,
+                viewModel = editItemViewModel
+            )
+        }
 
-    if(uiState.showClearAllConfirmationDialog) {
-        DeleteWarningPopupDialog(
-            itemName = "all items on the list",
-            onDismissRequest = {
-                viewModel.dismissDeleteConfirmationDialog()
-            },
-            onConfirm = {
-                viewModel.deleteAllItems()
-            }
-        )
+        PopupDisplayState.DELETE_ITEM -> {
+            // show delete item confirmation popup
+            DeleteWarningPopupDialog(
+                titleResId = R.string.delete_item,
+                itemName = uiState.itemStagedForEdition?.name,
+                onDismissRequest = {
+                    viewModel.dismissDeleteConfirmationDialog()
+                },
+                onConfirm = {
+                    viewModel.deleteStagedItem()
+                }
+            )
+        }
+
+        PopupDisplayState.CLEAR_LIST -> {
+            // show clear list confirmation dialog
+            DeleteWarningPopupDialog(
+                titleResId = R.string.erase_list,
+                itemName = stringResource(R.string.everything),
+                onDismissRequest = {
+                    viewModel.dismissDeleteConfirmationDialog()
+                },
+                onConfirm = {
+                    viewModel.deleteAllItems()
+                }
+            )
+        }
+        else -> {}
     }
 
 }
@@ -173,7 +181,8 @@ fun ShoppingListOptionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
 
     Row(horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .background(color = Color.LightGray)
             .padding(8.dp)
     ) {
@@ -202,9 +211,12 @@ fun ShoppingListOptionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
 }
 
 @Composable
-fun DeleteWarningPopupDialog(itemName: String?,
-                             onDismissRequest: ()->Unit,
-                             onConfirm: ()->Unit) {
+fun DeleteWarningPopupDialog(
+    titleResId: Int?,
+    itemName: String?,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
@@ -222,7 +234,7 @@ fun DeleteWarningPopupDialog(itemName: String?,
             }
         },
         title = {
-            Text(text = stringResource(R.string.delete_item))
+            Text(text = stringResource(titleResId ?: R.string.delete_item))
         },
         text = {
             Text(text =
@@ -262,92 +274,90 @@ fun ShoppingListItemCard(
                 else R.drawable.baseline_arrow_right_24
             ), null
         )
-        Column(
-//            verticalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .padding(start = 4.dp)
-        ) {
-            Row {
-                // name + quantity
-                val decoration = if(item.isInCart) TextDecoration.LineThrough else null
-                val textColor = if(item.isInCart) Color.Gray else Color.Unspecified
-                Text(
-                    text = item.name,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                    softWrap = false,
-                    textDecoration = decoration,
-                    color = textColor
-                )
-                ItemQuantityText(
-                    itemQuantity = item.quantity,
-                    textDecoration = decoration,
-                    color = textColor,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
-            }
+        Column(Modifier.padding(horizontal = 8.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                // NAME + QUANTITY + TAGS
+                Column {
+                    // name + quantity
+                    Row(verticalAlignment = Alignment.Top) {
+                        val decoration = if (item.isInCart) TextDecoration.LineThrough else null
+                        val textColor = if (item.isInCart) Color.Gray else Color.Unspecified
+                        Text(
+                            text = item.name,
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                            softWrap = false,
+                            textDecoration = decoration,
+                            color = textColor
+                        )
+                        ItemQuantityText(
+                            itemQuantity = item.quantity,
+                            textDecoration = decoration,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
 
-            if (!item.details.isNullOrEmpty())
-                Text(text = item.details, color = Color.Gray)
+                    if (!item.details.isNullOrEmpty())
+                        Text(text = item.details, color = Color.Gray)
 
-            if (expanded) {
-                if (item.bulk)
-                    TagBox(text = stringResource(R.string.bulk))
+                    if (expanded) {
+                        if (item.bulk)
+                            TagBox(text = stringResource(R.string.bulk))
 
-                TagBox(text = item.category)
+                        TagBox(text = item.category)
 
-                TagBox(text = item.shop)
-
-                Spacer(modifier = Modifier
-                    .weight(1F)
-                    .fillMaxHeight())
-                Text(
-                    text = stringResource(
-                        R.string.added_on_date,
-                        DateFormat.getDateInstance().format(Date(item.dateCreated))
-                    ),
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-        }
-        Spacer(modifier = Modifier.weight(1F))
-        // BUTTONS (EXPAND, EDIT, DELETE)
-        Column(
-            //verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxHeight()
-        ) {
-            IconButton(onClick = { toggleExpandCard(item) }) {
+                        TagBox(text = item.shop)
+                    }
+                }
+                Spacer(Modifier.weight(1F))
+                // EXPAND CARD BUTTON
                 Icon(
                     painter = painterResource(
                         if (expanded) R.drawable.baseline_keyboard_arrow_up_24
                         else R.drawable.baseline_keyboard_arrow_down_24
                     ), null,
-                    tint = Color.Gray
+                    tint = Color.Gray,
+                    modifier = Modifier.clickable { toggleExpandCard(item) }
                 )
             }
-            Spacer(Modifier.weight(1F))
             if (expanded && !item.isInCart) {
-                Row(horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = { onClickEditItem(item) }) {
-                        Icon(Icons.Filled.Edit,
-                            stringResource(R.string.edit),
-                            tint = Color.Gray
-                        )
-                    }
-                    IconButton(onClick = { onClickDeleteItem(item) }) {
-                        Icon(Icons.Filled.Delete,
-                            stringResource(R.string.delete),
-                            tint = Color.Gray
-                        )
-                    }
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.added_on_date,
+                            DateFormat.getDateInstance().format(Date(item.dateCreated))
+                        ),
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                    )
+                    Spacer(modifier = modifier.weight(1F))
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.edit),
+                        tint = Color.Gray,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .clickable { onClickEditItem(item) }
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = Color.Gray,
+                        modifier = Modifier
+                            .clickable { onClickDeleteItem(item) }
+                    )
                 }
             }
         }
     }
-    HorizontalDivider()
+    HorizontalDivider(
+        color = Color.LightGray,
+        modifier = Modifier.padding(horizontal = 8.dp)
+    )
 }
 
 private fun bgColorForItem(item: ShoppingListItem): Color {
