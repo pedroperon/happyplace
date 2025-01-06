@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.androidx.material3.windowsizeclass)
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.navigation.compose)
 
     testImplementation(libs.junit)
 

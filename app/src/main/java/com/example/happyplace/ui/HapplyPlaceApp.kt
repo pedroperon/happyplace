@@ -1,76 +1,121 @@
 package com.example.happyplace.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.happyplace.R
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.happyplace.model.ShoppingListViewModel
-import com.example.happyplace.ui.theme.HappyPlaceTheme
+
+enum class HappyPlaceScreen() { //val screenNameId:Int) {
+    Start,//(screenNameId = R.string.app_name),
+    Calendar,//(screenNameId = R.string.choose_side_dish),
+    ShoppingList,//(screenNameId = R.string.choose_entree),
+    Profile//(screenNameId = R.string.choose_accompaniment),
+}
 
 @Composable
 fun HappyPlaceApp(
     shoppingListViewModel: ShoppingListViewModel,
     windowSize: WindowWidthSizeClass,
-    modifier: Modifier = Modifier) {
+    modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController()
+) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
 
     Scaffold(
-        topBar = {
-            HappyPlaceAppBar()
-        },
-        floatingActionButton = {
-            AddItemFloatingActionButton(
-                onClick = { shoppingListViewModel.openNewItemDialog() }
-            )
+        bottomBar = {
+            HappyPlaceNavigationBar()
         }
     ) { innerPadding ->
 
-        ShoppingList(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = innerPadding,
-            viewModel = shoppingListViewModel
-        )
+        NavHost(
+            navController = navController,
+            startDestination = HappyPlaceScreen.ShoppingList.name,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+
+            composable(route = HappyPlaceScreen.Start.name) {
+                OverviewScreen(
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            composable(route = HappyPlaceScreen.ShoppingList.name) {
+                ShoppingListScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    viewModel = shoppingListViewModel
+                )
+            }
+
+            composable(route = HappyPlaceScreen.Calendar.name) {
+                CalendarScreen()
+            }
+
+            composable(route = HappyPlaceScreen.Profile.name) {
+                ProfileScreen()
+            }
+        }
     }
 }
 
 @Composable
-fun AddItemFloatingActionButton(onClick : ()->Unit) {
-    ExtendedFloatingActionButton(
-        onClick = onClick,
-        containerColor = Color.Gray,
-        contentColor = Color.White,
-        icon = { Icon(Icons.Filled.Add, "Extended floating action button.") },
-        text = { Text(text = stringResource(R.string.add_item)) },
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HappyPlaceAppBar() {
-    TopAppBar(
-        title = {
-            Text(text = stringResource(R.string.app_name), fontWeight = FontWeight.SemiBold)
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Gray, titleContentColor = Color.White),
-    )
+fun HappyPlaceNavigationBar() {
+    BottomAppBar {
+        Row(modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Filled.Home,
+                    tint = Color.DarkGray,
+                    contentDescription = "Home screen"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Filled.DateRange,
+                    tint = Color.DarkGray,
+                    contentDescription = "Calendar"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Filled.ShoppingCart,
+                    tint = Color.DarkGray,
+                    contentDescription = "Shopping list"
+                )
+            }
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Filled.AccountCircle,
+                    tint = Color.DarkGray,
+                    contentDescription = "Profile"
+                )
+            }
+        }
+    }
 }
 
 //@Preview(showBackground = true, showSystemUi = true, widthDp = 700)
