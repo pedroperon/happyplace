@@ -28,6 +28,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -272,7 +273,9 @@ fun ShoppingListItemCard(
             painter = painterResource(
                 if (item.isInCart) R.drawable.baseline_check_24
                 else R.drawable.baseline_arrow_right_24
-            ), null
+            ),
+            contentDescription = null,
+            tint = if(item.isInCart) Color.Gray else LocalContentColor.current
         )
         Column(Modifier.padding(horizontal = 8.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -362,7 +365,7 @@ fun ShoppingListItemCard(
 
 private fun bgColorForItem(item: ShoppingListItem): Color {
     val bgColor = if (item.isInCart) {
-        Color(0xFFEEEEEE)
+        Color(0xFFEFEFEF)
     } else {
         if (item.urgent)
             Color(0xFFFFDBDB)
