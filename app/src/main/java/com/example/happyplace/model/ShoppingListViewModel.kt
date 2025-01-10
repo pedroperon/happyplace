@@ -18,7 +18,8 @@ enum class PopupDisplayState {
     NONE,
     DELETE_ITEM,
     CLEAR_LIST,
-    EDIT_ITEM
+    EDIT_ITEM,
+    FILTER
 }
 
 data class ShoppingListUiState(
@@ -138,6 +139,14 @@ class ShoppingListViewModel(
                 itemStagedForEdition = null,
                 popupDisplayState = PopupDisplayState.NONE,
             ) }
+        }
+    }
+
+    fun showFilterDialog() {
+        _uiState.update {
+            it.copy(
+                popupDisplayState = PopupDisplayState.FILTER
+            )
         }
     }
 }

@@ -43,4 +43,9 @@
     <string name="clear_list">Clear list</string>
     <string name="erase_list">Erase list</string>
     <string name="everything">everything</string>
+    <string name="calendar">Calendar</string>
+    <string name="shopping_list">Shopping list</string>
+    <string name="parameters">Parameters</string>
+    <string name="my_shopping_List">My shopping list</string>
+    <string name="add_task">New task</string>
 </resources>

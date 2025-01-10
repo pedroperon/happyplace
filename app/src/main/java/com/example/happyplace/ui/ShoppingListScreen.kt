@@ -29,7 +29,6 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -67,94 +66,90 @@ import java.util.Date
 @Composable
 fun ShoppingListScreen (
     modifier: Modifier = Modifier,
-    viewModel: ShoppingListViewModel,
+    shoppingListViewModel: ShoppingListViewModel,
     editItemViewModel: EditItemViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by shoppingListViewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            ShoppingListTopBar()
-        },
-        floatingActionButton = {
-            AddItemFloatingActionButton(
-                onClick = { viewModel.openNewItemDialog() }
-            )
-        },
-        modifier = modifier
+    Box(modifier = modifier
+        .fillMaxSize()
+        .wrapContentSize()
     ) {
-        innerPadding ->
-
-        Box(
-            modifier = modifier
-                .padding(innerPadding)
-                .fillMaxWidth()
-                .wrapContentSize()
-        ) {
-            if (uiState.shoppingList.isEmpty()) {
-                Text(
-                    text = "Your shopping list is empty.\nTap \"Add item\" to start",
-                    textAlign = TextAlign.Center,
-                    color = Color.DarkGray
+        if (uiState.shoppingList.isEmpty()) {
+            Text(
+                text = "Your shopping list is empty.\nTap \"Add item\" to start",
+                textAlign = TextAlign.Center,
+                color = Color.DarkGray
+            )
+        } else {
+            Column {
+                ShoppingListActionsBar(
+                    onClickDeleteAll = { shoppingListViewModel.showClearAllConfirmationDialog() },
+                    onClickFilter = { shoppingListViewModel.showFilterDialog() }
                 )
-            } else {
                 ShoppingList(
                     uiState.shoppingList,
-                    viewModel,
+                    shoppingListViewModel,
                     editItemViewModel
                 )
             }
         }
-
-        when (uiState.popupDisplayState) {
-
-            PopupDisplayState.EDIT_ITEM -> {
-                // show edit / create item dialog
-                val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
-                EditItemInShoppingListDialog(
-                    onDismissRequest = {
-                        viewModel.closeEditItemDialog()
-                        editItemViewModel.setItemBeingEdited(null)
-                    },
-                    onDone = { viewModel.saveItem(itemIndex, it) },
-                    originalItem = uiState.itemStagedForEdition,
-                    shops = uiState.shopsList,
-                    categories = uiState.categoriesList,
-                    viewModel = editItemViewModel
-                )
-            }
-
-            PopupDisplayState.DELETE_ITEM -> {
-                // show delete item confirmation popup
-                DeleteWarningPopupDialog(
-                    titleResId = R.string.delete_item,
-                    itemName = uiState.itemStagedForEdition?.name,
-                    onDismissRequest = {
-                        viewModel.dismissDeleteConfirmationDialog()
-                    },
-                    onConfirm = {
-                        viewModel.deleteStagedItem()
-                    }
-                )
-            }
-
-            PopupDisplayState.CLEAR_LIST -> {
-                // show clear list confirmation dialog
-                DeleteWarningPopupDialog(
-                    titleResId = R.string.erase_list,
-                    itemName = stringResource(R.string.everything),
-                    onDismissRequest = {
-                        viewModel.dismissDeleteConfirmationDialog()
-                    },
-                    onConfirm = {
-                        viewModel.deleteAllItems()
-                    }
-                )
-            }
-
-            else -> {}
-        }
     }
+
+    when (uiState.popupDisplayState) {
+
+        PopupDisplayState.EDIT_ITEM -> {
+            // show edit / create item dialog
+            val itemIndex = uiState.shoppingList.indexOf(uiState.itemStagedForEdition)
+            EditItemInShoppingListDialog(
+                onDismissRequest = {
+                    shoppingListViewModel.closeEditItemDialog()
+                    editItemViewModel.setItemBeingEdited(null)
+                },
+                onDone = { shoppingListViewModel.saveItem(itemIndex, it) },
+                originalItem = uiState.itemStagedForEdition,
+                shops = uiState.shopsList,
+                categories = uiState.categoriesList,
+                viewModel = editItemViewModel
+            )
+        }
+
+        PopupDisplayState.DELETE_ITEM -> {
+            // show delete item confirmation popup
+            DeleteWarningPopupDialog(
+                titleResId = R.string.delete_item,
+                itemName = uiState.itemStagedForEdition?.name,
+                onDismissRequest = {
+                    shoppingListViewModel.dismissDeleteConfirmationDialog()
+                },
+                onConfirm = {
+                    shoppingListViewModel.deleteStagedItem()
+                }
+            )
+        }
+
+        PopupDisplayState.CLEAR_LIST -> {
+            // show clear list confirmation dialog
+            DeleteWarningPopupDialog(
+                titleResId = R.string.erase_list,
+                itemName = stringResource(R.string.everything),
+                onDismissRequest = {
+                    shoppingListViewModel.dismissDeleteConfirmationDialog()
+                },
+                onConfirm = {
+                    shoppingListViewModel.deleteAllItems()
+                }
+            )
+        }
+        PopupDisplayState.FILTER -> {
+            FilterListPopupDialog()
+        }
+        else -> {}
+    }
+}
+
+@Composable
+fun FilterListPopupDialog() {
 }
 
 @Composable
@@ -165,60 +160,41 @@ private fun ShoppingList(
 ) {
     var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0) }
 
-    Column {
-
-        ShoppingListOptionsBar(
-            onClickDeleteAll = { shoppingListViewModel.showClearAllConfirmationDialog() },
-            onClickFilter = {}
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            itemsList.forEach { item ->
-                key(item.name + item.dateCreated) {
-                    ShoppingListItemCard(
-                        item = item,
-                        toggleItemInCart = {
-                            shoppingListViewModel.toggleItemBought(it)
-                        },
-                        expanded = (expandedItemTimestamp != 0L && item.dateCreated == expandedItemTimestamp),
-                        toggleExpandCard = {
-                            expandedItemTimestamp = when (expandedItemTimestamp) {
-                                item.dateCreated -> 0L
-                                else -> item.dateCreated
-                            }
-                        },
-                        onClickEditItem = {
-                            shoppingListViewModel.openEditItemDialog(it)
-                            editItemViewModel.setItemBeingEdited(it)
-                        },
-                        onClickDeleteItem = {
-                            shoppingListViewModel.showDeleteConfirmationDialog(it)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        itemsList.forEach { item ->
+            key(item.name + item.dateCreated) {
+                ShoppingListItemCard(
+                    item = item,
+                    toggleItemInCart = {
+                        shoppingListViewModel.toggleItemBought(it)
+                    },
+                    expanded = (expandedItemTimestamp != 0L && item.dateCreated == expandedItemTimestamp),
+                    toggleExpandCard = {
+                        expandedItemTimestamp = when (expandedItemTimestamp) {
+                            item.dateCreated -> 0L
+                            else -> item.dateCreated
                         }
-                    )
-                }
+                    },
+                    onClickEditItem = {
+                        shoppingListViewModel.openEditItemDialog(it)
+                        editItemViewModel.setItemBeingEdited(it)
+                    },
+                    onClickDeleteItem = {
+                        shoppingListViewModel.showDeleteConfirmationDialog(it)
+                    }
+                )
             }
-            Spacer(modifier = Modifier.height(100.dp))
         }
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
 @Composable
-fun AddItemFloatingActionButton(onClick : ()->Unit) {
-    ExtendedFloatingActionButton(
-        onClick = onClick,
-        containerColor = Color.Gray,
-        contentColor = Color.White,
-        icon = { Icon(Icons.Filled.Add, "Extended floating action button.") },
-        text = { Text(text = stringResource(R.string.add_item)) },
-    )
-}
-
-@Composable
-fun ShoppingListOptionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
+fun ShoppingListActionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
 
     Row(horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically,
@@ -322,24 +298,7 @@ fun ShoppingListItemCard(
                 // NAME + QUANTITY + TAGS
                 Column {
                     // name + quantity
-                    Row(verticalAlignment = Alignment.Top) {
-                        val decoration = if (item.isInCart) TextDecoration.LineThrough else null
-                        val textColor = if (item.isInCart) Color.Gray else Color.Unspecified
-                        Text(
-                            text = item.name,
-                            overflow = TextOverflow.Ellipsis,
-                            maxLines = 1,
-                            softWrap = false,
-                            textDecoration = decoration,
-                            color = textColor
-                        )
-                        ItemQuantityText(
-                            itemQuantity = item.quantity,
-                            textDecoration = decoration,
-                            color = textColor,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
+                    NameAndQuantityText(item)
 
                     if (!item.details.isNullOrEmpty())
                         Text(text = item.details, color = Color.Gray)
@@ -403,13 +362,40 @@ fun ShoppingListItemCard(
     )
 }
 
+@Composable
+private fun NameAndQuantityText(item: ShoppingListItem) {
+    Row(verticalAlignment = Alignment.Top) {
+        val decoration = if (item.isInCart) TextDecoration.LineThrough else null
+        val textColor =
+            if (item.isInCart) Color.Gray else if (item.urgent) Color(0xFF880000) else Color.Unspecified
+        val fontWeight =
+            if (item.isInCart) FontWeight.Normal else if (item.urgent) FontWeight.SemiBold else FontWeight.Normal
+        Text(
+            text = item.name,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 1,
+            softWrap = false,
+            textDecoration = decoration,
+            color = textColor,
+            fontWeight = fontWeight
+        )
+        ItemQuantityText(
+            itemQuantity = item.quantity,
+            textDecoration = decoration,
+            color = textColor,
+            fontWeight = fontWeight,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+    }
+}
+
 private fun bgColorForItem(item: ShoppingListItem): Color {
     val bgColor = if (item.isInCart) {
         Color(0xFFEFEFEF)
     } else {
-        if (item.urgent)
-            Color(0xFFFFDBDB)
-        else
+//        if (item.urgent)
+//            Color(0xFFFFDBDB)
+//        else
             Color(0xFFF8F8F8)
     }
     return bgColor
@@ -441,10 +427,13 @@ fun TagBox(text: String?) {
 
 
 @Composable
-fun ItemQuantityText(itemQuantity: ItemQuantity?,
-                     modifier: Modifier = Modifier,
-                     textDecoration: TextDecoration?,
-                     color: Color) {
+fun ItemQuantityText(
+    itemQuantity: ItemQuantity?,
+    modifier: Modifier = Modifier,
+    textDecoration: TextDecoration?,
+    color: Color,
+    fontWeight: FontWeight
+) {
     if(itemQuantity==null || itemQuantity.amount==0)
         return
 
@@ -457,7 +446,8 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?,
         text = "($t)",
         modifier = modifier,
         textDecoration = textDecoration,
-        color = color
+        color = color,
+        fontWeight = fontWeight
     )
 }
 
@@ -466,9 +456,19 @@ fun ItemQuantityText(itemQuantity: ItemQuantity?,
 fun ShoppingListTopBar() {
     TopAppBar(
         title = {
-            Text(text = stringResource(R.string.app_name), fontWeight = FontWeight.SemiBold)
+            Column() {
+//                Text(
+//                    text = stringResource(R.string.app_name),
+//                    fontWeight = FontWeight.SemiBold,
+//                    fontSize = 12.sp
+//                )
+                Text(
+                    text = stringResource(R.string.my_shopping_List),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Gray, titleContentColor = Color.White),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF005500), titleContentColor = Color.White),
     )
 }
 

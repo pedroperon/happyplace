@@ -1,121 +1,196 @@
 package com.example.happyplace.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import com.example.happyplace.R
 import com.example.happyplace.model.ShoppingListViewModel
+import com.example.happyplace.model.TasksCalendarViewModel
 
-enum class HappyPlaceScreen() { //val screenNameId:Int) {
-    Start,//(screenNameId = R.string.app_name),
-    Calendar,//(screenNameId = R.string.choose_side_dish),
-    ShoppingList,//(screenNameId = R.string.choose_entree),
-    Profile//(screenNameId = R.string.choose_accompaniment),
+enum class HappyPlaceScreen(val screenNameId:Int) {
+    Start(screenNameId = R.string.app_name),
+    Calendar(screenNameId = R.string.calendar),
+    ShoppingList(screenNameId = R.string.shopping_list),
+    Profile(screenNameId = R.string.parameters),
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HappyPlaceApp(
     shoppingListViewModel: ShoppingListViewModel,
+    tasksCalendarViewModel: TasksCalendarViewModel,
     windowSize: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
 ) {
-    val backStackEntry by navController.currentBackStackEntryAsState()
+    var currentScreen by rememberSaveable { mutableStateOf(HappyPlaceScreen.ShoppingList) }
 
     Scaffold(
         bottomBar = {
-            HappyPlaceNavigationBar()
-        }
+            HappyPlaceNavigationBar(currentScreen, { currentScreen = it })
+        },
+        topBar = {
+            HappyPlaceTopBar(currentScreen)
+        },
+        floatingActionButton = {
+            when(currentScreen) {
+                HappyPlaceScreen.ShoppingList -> {
+                    AddItemFloatingActionButton(
+                        buttonTitleId = R.string.add_item,
+                        onClick = { shoppingListViewModel.openNewItemDialog() }
+                    )
+                }
+                HappyPlaceScreen.Calendar -> {
+                    AddItemFloatingActionButton(
+                        buttonTitleId = R.string.add_task,
+                        onClick = { tasksCalendarViewModel.openNewTaskDialog() }
+                    )
+                }
+                else -> {}
+            }
+        },
     ) { innerPadding ->
 
-        NavHost(
-            navController = navController,
-            startDestination = HappyPlaceScreen.ShoppingList.name,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
         ) {
+            when (currentScreen) {
+                HappyPlaceScreen.Start ->
+                    OverviewScreen()
 
-            composable(route = HappyPlaceScreen.Start.name) {
-                OverviewScreen(
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+                HappyPlaceScreen.ShoppingList ->
+                    ShoppingListScreen(
+                        shoppingListViewModel = shoppingListViewModel
+                    )
 
-            composable(route = HappyPlaceScreen.ShoppingList.name) {
-                ShoppingListScreen(
-                    modifier = Modifier.fillMaxSize(),
-                    viewModel = shoppingListViewModel
-                )
-            }
+                HappyPlaceScreen.Calendar ->
+                    CalendarScreen()
 
-            composable(route = HappyPlaceScreen.Calendar.name) {
-                CalendarScreen()
-            }
-
-            composable(route = HappyPlaceScreen.Profile.name) {
-                ProfileScreen()
+                HappyPlaceScreen.Profile ->
+                    ProfileScreen()
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HappyPlaceNavigationBar() {
-    BottomAppBar {
-        Row(modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            IconButton(onClick = {}) {
-                Icon(
+fun HappyPlaceTopBar(currentScreen: HappyPlaceScreen) {
+    TopAppBar(
+        title = {
+            Column() {
+//                Text(
+//                    text = stringResource(R.string.app_name),
+//                    fontWeight = FontWeight.SemiBold,
+//                    fontSize = 12.sp
+//                )
+                Text(
+                    text = stringResource(currentScreen.screenNameId),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF005500), titleContentColor = Color.White),
+    )
+}
+
+@Composable
+fun HappyPlaceNavigationBar(
+    currentScreen: HappyPlaceScreen,
+    onSelectTab:(HappyPlaceScreen)->Unit
+) {
+    BottomAppBar(
+        actions = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                BottomBarButton(
+                    screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.Home,
-                    tint = Color.DarkGray,
-                    contentDescription = "Home screen"
+                    selected = currentScreen==HappyPlaceScreen.Start,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.Start) }
                 )
-            }
-            IconButton(onClick = {}) {
-                Icon(
+                BottomBarButton(
+                    screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.DateRange,
-                    tint = Color.DarkGray,
-                    contentDescription = "Calendar"
+                    selected = currentScreen==HappyPlaceScreen.Calendar,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.Calendar) }
                 )
-            }
-            IconButton(onClick = {}) {
-                Icon(
+                BottomBarButton(
+                    screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.ShoppingCart,
-                    tint = Color.DarkGray,
-                    contentDescription = "Shopping list"
+                    selected = currentScreen==HappyPlaceScreen.ShoppingList,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.ShoppingList) }
                 )
-            }
-            IconButton(onClick = {}) {
-                Icon(
+                BottomBarButton(
+                    screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.AccountCircle,
-                    tint = Color.DarkGray,
-                    contentDescription = "Profile"
+                    selected = currentScreen==HappyPlaceScreen.Profile,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.Profile) }
                 )
             }
         }
+    )
+}
+
+@Composable
+private fun BottomBarButton(
+    screenNameId: Int,
+    imageVector: ImageVector,
+    onSelectTab: () -> Unit,
+    selected: Boolean
+) {
+    IconButton(
+        onClick = onSelectTab
+    ) {
+        Icon(
+            imageVector = imageVector,
+            tint = if(selected) Color.DarkGray else Color.Gray,
+            contentDescription = stringResource(screenNameId)
+        )
     }
+}
+
+@Composable
+fun AddItemFloatingActionButton(onClick: () -> Unit, buttonTitleId: Int) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        containerColor = Color.Gray,
+        contentColor = Color.White,
+        icon = { Icon(Icons.Filled.Add, "Extended floating action button.") },
+        text = { Text(text = stringResource(buttonTitleId)) },
+    )
 }
 
 //@Preview(showBackground = true, showSystemUi = true, widthDp = 700)

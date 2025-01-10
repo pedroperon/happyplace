@@ -26,8 +26,47 @@ message ShoppingListItem {
   string category = 10;
 }
 
+message ShoppingListFilter {
+  bool onlyRemaining = 1;
+  string category = 2;
+  string shop = 3;
+  bool urgent = 4;
+  bool bulk = 5;
+
+  enum SortOrder {
+    NONE = 0;
+    DATE = 1;
+    NAME = 2;
+  }
+  SortOrder sortOrder = 6;
+}
+
 message LocalShoppingList {
   repeated ShoppingListItem items =  1;
   repeated string shops = 2;
   repeated string categories = 3;
+  ShoppingListFilter filter = 4;
+}
+
+// Tasks
+message User {
+  string name = 1;
+}
+
+message Task {
+  enum TaskType {
+    NONE = 0;
+    CLEANING = 1;
+    MAINTENANCE = 2;
+  }
+
+  string name = 1;
+  TaskType type = 2;
+  int64 initialDate = 3;
+  uint32 period = 4;
+  User taskOwner = 5;
+}
+
+message LocalTasksList {
+  repeated Task tasks = 1;
 }
