@@ -19,13 +19,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -88,9 +86,9 @@ fun ShoppingListScreen (
                     onClickFilter = { shoppingListViewModel.showFilterDialog() }
                 )
                 ShoppingList(
-                    uiState.shoppingList,
-                    shoppingListViewModel,
-                    editItemViewModel
+                    itemsList = uiState.shoppingList,
+                    shoppingListViewModel = shoppingListViewModel,
+                    setItemToBeEdited = { editItemViewModel.setItemBeingEdited(it) }
                 )
             }
         }
@@ -156,9 +154,9 @@ fun FilterListPopupDialog() {
 private fun ShoppingList(
     itemsList: List<ShoppingListItem>,
     shoppingListViewModel: ShoppingListViewModel,
-    editItemViewModel: EditItemViewModel
+    setItemToBeEdited:(ShoppingListItem)->Unit
 ) {
-    var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0) }
+    var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0L) }
 
     Column(
         modifier = Modifier
@@ -175,13 +173,13 @@ private fun ShoppingList(
                     expanded = (expandedItemTimestamp != 0L && item.dateCreated == expandedItemTimestamp),
                     toggleExpandCard = {
                         expandedItemTimestamp = when (expandedItemTimestamp) {
-                            item.dateCreated -> 0L
-                            else -> item.dateCreated
+                            it.dateCreated -> 0L
+                            else -> it.dateCreated
                         }
                     },
                     onClickEditItem = {
+                        setItemToBeEdited(it)
                         shoppingListViewModel.openEditItemDialog(it)
-                        editItemViewModel.setItemBeingEdited(it)
                     },
                     onClickDeleteItem = {
                         shoppingListViewModel.showDeleteConfirmationDialog(it)
@@ -280,7 +278,8 @@ fun ShoppingListItemCard(
         .background(bgColorForItem(item))
         .combinedClickable(
             onDoubleClick = { toggleItemInCart(item) }
-        ) { /*TODO: show vanishing msg saying double-tap-to-move-in-out-of-cart*/ }
+        ) { }
+        .clickable { toggleExpandCard(item) }
         .padding(8.dp)
         .animateContentSize(),
         verticalAlignment = Alignment.Top

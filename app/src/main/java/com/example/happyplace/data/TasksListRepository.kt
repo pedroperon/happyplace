@@ -3,6 +3,7 @@ package com.example.happyplace.data
 import android.util.Log
 import androidx.datastore.core.DataStore
 import com.example.happyplace.LocalTasksList
+import com.example.happyplace.Task
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -13,8 +14,10 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
         .catch { exception ->
             // dataStore.data throws an IOException when an error is encountered when reading data
             if (exception is IOException) {
-                Log.e("TasksListRepo",
-                    "Error reading tasks list.", exception)
+                Log.e(
+                    "TasksListRepo",
+                    "Error reading tasks list.", exception
+                )
                 emit(LocalTasksList.getDefaultInstance())
             } else {
                 throw exception
@@ -22,4 +25,13 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
         }
 
     suspend fun fetchInitialTasksList() = tasksListStore.data.first()
+
+    suspend fun saveTask(task: Task) {
+        tasksListStore.updateData { tasksList ->
+            tasksList
+                .toBuilder()
+                .addTasks(task)
+                .build()
+        }
+    }
 }

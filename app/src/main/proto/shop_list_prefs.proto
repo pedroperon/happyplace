@@ -58,6 +58,7 @@ message Task {
     NONE = 0;
     CLEANING = 1;
     MAINTENANCE = 2;
+    SHOPPING = 3;
   }
 
   string name = 1;
@@ -65,6 +66,7 @@ message Task {
   int64 initialDate = 3;
   uint32 period = 4;
   User taskOwner = 5;
+  string details = 6;
 }
 
 message LocalTasksList {

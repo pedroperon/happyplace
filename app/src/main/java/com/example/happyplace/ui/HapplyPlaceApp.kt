@@ -2,7 +2,6 @@ package com.example.happyplace.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,7 +43,6 @@ enum class HappyPlaceScreen(val screenNameId:Int) {
     Profile(screenNameId = R.string.parameters),
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HappyPlaceApp(
     shoppingListViewModel: ShoppingListViewModel,
@@ -56,7 +54,7 @@ fun HappyPlaceApp(
 
     Scaffold(
         bottomBar = {
-            HappyPlaceNavigationBar(currentScreen, { currentScreen = it })
+            HappyPlaceNavigationBar(currentScreen) { currentScreen = it }
         },
         topBar = {
             HappyPlaceTopBar(currentScreen)
@@ -94,7 +92,9 @@ fun HappyPlaceApp(
                     )
 
                 HappyPlaceScreen.Calendar ->
-                    CalendarScreen()
+                    CalendarScreen(
+                        tasksCalendarViewModel = tasksCalendarViewModel,
+                    )
 
                 HappyPlaceScreen.Profile ->
                     ProfileScreen()
@@ -108,19 +108,15 @@ fun HappyPlaceApp(
 fun HappyPlaceTopBar(currentScreen: HappyPlaceScreen) {
     TopAppBar(
         title = {
-            Column() {
-//                Text(
-//                    text = stringResource(R.string.app_name),
-//                    fontWeight = FontWeight.SemiBold,
-//                    fontSize = 12.sp
-//                )
-                Text(
-                    text = stringResource(currentScreen.screenNameId),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Text(
+                text = stringResource(currentScreen.screenNameId),
+                fontWeight = FontWeight.SemiBold
+            )
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF005500), titleContentColor = Color.White),
+        colors = TopAppBarDefaults
+            .topAppBarColors(
+                containerColor = Color(0xFF005500),
+                titleContentColor = Color.White),
     )
 }
 

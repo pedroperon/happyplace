@@ -91,6 +91,7 @@ fun EditItemInShoppingListDialog(
                     //NAME
                     value = editItemUiState.itemBeingEdited.name,
                     onValueChange = { viewModel.updateName(it) },
+                    enabled = true,
                     shape = RoundedCornerShape(8.dp),
                     singleLine = true,
                     label = { Text(text = stringResource(R.string.name)) },
@@ -273,11 +274,10 @@ fun OptionsDropdownMenu(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 onChooseOption(newOptionName)
-                                dismiss() //onToggleExpanded(false)
+                                dismiss()
                             }
                         ),
                         label = { Text(text = stringResource(R.string.create_new)) },
-                        //modifier = Modifier.fillMaxWidth(0.5F)
                     )
                 }
             )

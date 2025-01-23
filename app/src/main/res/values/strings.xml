@@ -48,4 +48,25 @@
     <string name="parameters">Parameters</string>
     <string name="my_shopping_List">My shopping list</string>
     <string name="add_task">New task</string>
+    <string name="new_task">New task</string>
+    <string name="task">Task</string>
+    <string name="monday">monday</string>
+    <string name="tuesday">tuesday</string>
+    <string name="wednesday">wednesday</string>
+    <string name="thursday">thursday</string>
+    <string name="friday">friday</string>
+    <string name="saturday">saturday</string>
+    <string name="sunday">sunday</string>
+    <string name="january">january</string>
+    <string name="february">february</string>
+    <string name="march">march</string>
+    <string name="april">april</string>
+    <string name="may">may</string>
+    <string name="june">june</string>
+    <string name="july">july</string>
+    <string name="august">august</string>
+    <string name="september">september</string>
+    <string name="october">october</string>
+    <string name="november">november</string>
+    <string name="december">december</string>
 </resources>
