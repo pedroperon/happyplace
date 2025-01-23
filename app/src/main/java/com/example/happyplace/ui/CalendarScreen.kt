@@ -101,7 +101,7 @@ fun MonthBox(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .aspectRatio(1F)
+                        .aspectRatio(0.75F)
                         .fillMaxSize()
                         .clickable { onClickDay(day.toEpochDay()) }
                         .background(if(day.toEpochDay()==expandedDay) Color(0x40005500) else Color.Transparent)

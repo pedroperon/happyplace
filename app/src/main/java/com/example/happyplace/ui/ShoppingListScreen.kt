@@ -162,6 +162,7 @@ private fun ShoppingList(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .clickable { expandedItemTimestamp = 0L }
     ) {
         itemsList.forEach { item ->
             key(item.name + item.dateCreated) {
