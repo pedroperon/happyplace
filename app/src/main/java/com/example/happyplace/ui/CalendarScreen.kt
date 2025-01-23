@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,11 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.happyplace.R
+import com.example.happyplace.Task
 import com.example.happyplace.model.EditTaskViewModel
 import com.example.happyplace.model.TasksCalendarViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.math.min
 
@@ -48,10 +49,12 @@ fun CalendarScreen(
             modifier = modifier.fillMaxSize()//.verticalScroll(rememberScrollState(0))
         ) {
             for(monthOffset in 0..5) {
+                val tasks = tasksCalendarViewModel.getTasksForMonth(monthOffset)
                 MonthBox(
                     monthOffset = monthOffset,
                     onClickDay = { tasksCalendarViewModel.toggleShowDay(it) },
                     expandedDay = uiState.expandedDay,
+                    tasks = tasks
                 )
             }
         }
@@ -74,15 +77,15 @@ fun CalendarScreen(
 @Composable
 fun MonthBox(
     monthOffset: Int,
-    onClickDay: (Long)->Unit,
-    expandedDay: Long?
+    onClickDay: (Long) -> Unit,
+    expandedDay: Long?,
+    tasks: List<Task>
 ) {
     val today = LocalDate.now()
-    ZoneId.systemDefault()
     val startDay = today.withDayOfMonth(1).plusMonths(monthOffset.toLong())
 
     Box(Modifier.background(if(monthOffset%2==1) Color(0xFFF4F4F4) else Color.White)) {
-        Text(text = stringResource(MONTHS_NAME_IDS[startDay.monthValue]),
+        Text(text = stringResource(MONTHS_NAME_IDS[startDay.monthValue-1]),
             fontSize = 50.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFEEEEEE),
@@ -91,21 +94,32 @@ fun MonthBox(
             columns = GridCells.Fixed(7)
         ) {
             items(startDay.dayOfWeek.ordinal) {
-
+                // for aligning with days of week on header
             }
             items(startDay.lengthOfMonth()) { count ->
                 val day = startDay.plusDays(count.toLong())
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .aspectRatio(1F)
+                        .fillMaxSize()
                         .clickable { onClickDay(day.toEpochDay()) }
                         .background(if(day.toEpochDay()==expandedDay) Color(0x40005500) else Color.Transparent)
                 ) {
-                    Text(
-                        text = "${day.dayOfMonth}",
-                        modifier = Modifier.fillMaxSize().wrapContentSize(),
-                        fontWeight = if (day.toEpochDay() == today.toEpochDay()) FontWeight.Bold else FontWeight.Normal
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${day.dayOfMonth}",
+                            fontWeight = if (day.toEpochDay() == today.toEpochDay()) FontWeight.Bold else FontWeight.Normal
+                        )
+                        var dots = ""
+                            for(task in tasks.filter{
+                                it.initialDate == day.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+                            }) {
+                                // 1 dot for each task in this day
+                                dots += "·"
+                            }
+                        Text(text = dots)
+                    }
                 }
             }
         }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 
 data class TasksCalendarUiState(
     val tasks : List<Task> = listOf(),
@@ -76,6 +77,24 @@ class TasksCalendarViewModel(
         viewModelScope.launch {
                 tasksListRepository.saveTask(task)
         }
+    }
+
+    fun getTasksForMonth(monthOffset: Int): List<Task> {
+        val firstDay = LocalDate.now()
+            .withDayOfMonth(1)
+            .plusMonths(monthOffset.toLong())
+
+        val startMillis = firstDay
+            .atStartOfDay(ZoneId.of("UTC"))
+            .toInstant().toEpochMilli()
+
+        val endMillis = firstDay.plusMonths(1L).minusDays(1)
+            .atStartOfDay(ZoneId.of("UTC"))
+            .toInstant().toEpochMilli()
+
+        return _uiState.value.tasks.filter {
+            it.initialDate in startMillis..endMillis
+        }.sortedBy { it.initialDate }
     }
 }
 

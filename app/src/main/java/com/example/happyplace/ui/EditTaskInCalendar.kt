@@ -128,14 +128,15 @@ fun EditTaskPopupDialog(
                             onClickSave(
                                 editTaskUiState.taskBeingEdited
                                 .toBuilder()
-                                .setInitialDate(datePickerState.selectedDateMillis!!)
+                                .setInitialDate(datePickerState.selectedDateMillis!!) // start of the day
                                 .build()
                             )
 
                             onDismissRequest()
                         },
                         enabled = (
-                                editTaskUiState.taskBeingEdited.name.isNotEmpty() && datePickerState.selectedDateMillis!=null
+                                editTaskUiState.taskBeingEdited.name.isNotEmpty() &&
+                                datePickerState.selectedDateMillis!=null
                                 )
                     ) {
                         Text(text = stringResource(R.string.done))
