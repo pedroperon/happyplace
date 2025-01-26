@@ -69,4 +69,5 @@
     <string name="october">october</string>
     <string name="november">november</string>
     <string name="december">december</string>
+    <string name="tasks_of_the_day">Tasks of the day %1$s</string>
 </resources>

@@ -8,13 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.happyplace.LocalTasksList
 import com.example.happyplace.Task
 import com.example.happyplace.data.TasksListRepository
+import com.example.happyplace.utils.startOfDayMillis
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.ZoneId
 
 data class TasksCalendarUiState(
     val tasks : List<Task> = listOf(),
@@ -84,16 +84,15 @@ class TasksCalendarViewModel(
             .withDayOfMonth(1)
             .plusMonths(monthOffset.toLong())
 
-        val startMillis = firstDay
-            .atStartOfDay(ZoneId.of("UTC"))
-            .toInstant().toEpochMilli()
+        val firstDayStartInMillis = firstDay.startOfDayMillis()
 
-        val endMillis = firstDay.plusMonths(1L).minusDays(1)
-            .atStartOfDay(ZoneId.of("UTC"))
-            .toInstant().toEpochMilli()
+        val lastDayStartInMillis = firstDay
+            .plusMonths(1L)
+            .minusDays(1)
+            .startOfDayMillis()
 
         return _uiState.value.tasks.filter {
-            it.initialDate in startMillis..endMillis
+            it.initialDate in firstDayStartInMillis..lastDayStartInMillis
         }.sortedBy { it.initialDate }
     }
 }
