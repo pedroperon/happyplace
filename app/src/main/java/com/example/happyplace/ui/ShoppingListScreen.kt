@@ -303,13 +303,15 @@ fun ShoppingListItemCard(
                     if (!item.details.isNullOrEmpty())
                         Text(text = item.details, color = Color.Gray)
 
-                    if (expanded) {
-                        if (item.bulk)
-                            TagBox(text = stringResource(R.string.bulk))
+                    Row {
+                        if (expanded) {
+                            if (item.bulk)
+                                TagBox(text = stringResource(R.string.bulk))
 
-                        TagBox(text = item.category)
+                            TagBox(text = item.category)
 
-                        TagBox(text = item.shop)
+                            TagBox(text = item.shop)
+                        }
                     }
                 }
                 Spacer(Modifier.weight(1F))
@@ -393,10 +395,7 @@ private fun bgColorForItem(item: ShoppingListItem): Color {
     val bgColor = if (item.isInCart) {
         Color(0xFFEFEFEF)
     } else {
-//        if (item.urgent)
-//            Color(0xFFFFDBDB)
-//        else
-            Color(0xFFF8F8F8)
+        Color(0xFFF8F8F8)
     }
     return bgColor
 }
@@ -408,7 +407,7 @@ fun TagBox(text: String?) {
 
     Box(contentAlignment = Alignment.Center,
         modifier = Modifier
-            .padding(vertical = 4.dp)
+            .padding(top = 4.dp, end = 4.dp)
             .clip(RoundedCornerShape(33))
             .background(Color.LightGray)
     ) {
@@ -448,27 +447,6 @@ fun ItemQuantityText(
         textDecoration = textDecoration,
         color = color,
         fontWeight = fontWeight
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ShoppingListTopBar() {
-    TopAppBar(
-        title = {
-            Column() {
-//                Text(
-//                    text = stringResource(R.string.app_name),
-//                    fontWeight = FontWeight.SemiBold,
-//                    fontSize = 12.sp
-//                )
-                Text(
-                    text = stringResource(R.string.my_shopping_List),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF005500), titleContentColor = Color.White),
     )
 }
 
