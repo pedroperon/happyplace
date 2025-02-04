@@ -1,11 +1,18 @@
 package com.example.happyplace.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -28,10 +35,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.ContextCompat
 import com.example.happyplace.R
 import com.example.happyplace.model.ShoppingListViewModel
 import com.example.happyplace.model.TasksCalendarViewModel
@@ -50,7 +60,24 @@ fun HappyPlaceApp(
     windowSize: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
-    var currentScreen by rememberSaveable { mutableStateOf(HappyPlaceScreen.ShoppingList) }
+    var currentScreen by rememberSaveable { mutableStateOf(HappyPlaceScreen.Start) }
+
+    val context = LocalContext.current
+
+    var hasNotificationPermission by rememberSaveable {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else true
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { hasNotificationPermission = it }
+    )
 
     Scaffold(
         bottomBar = {
@@ -70,7 +97,15 @@ fun HappyPlaceApp(
                 HappyPlaceScreen.Calendar -> {
                     AddItemFloatingActionButton(
                         buttonTitleId = R.string.add_task,
-                        onClick = { tasksCalendarViewModel.openNewTaskDialog() }
+                        onClick = {
+                            tasksCalendarViewModel.openNewTaskDialog()
+
+                            if (!hasNotificationPermission) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            }
+                        }
                     )
                 }
                 else -> {}
@@ -84,7 +119,10 @@ fun HappyPlaceApp(
         ) {
             when (currentScreen) {
                 HappyPlaceScreen.Start ->
-                    OverviewScreen()
+                    OverviewScreen(
+                        shoppingListViewModel = shoppingListViewModel,
+                        tasksCalendarViewModel = tasksCalendarViewModel
+                    )
 
                 HappyPlaceScreen.ShoppingList ->
                     ShoppingListScreen(
@@ -134,26 +172,30 @@ fun HappyPlaceNavigationBar(
                 BottomBarButton(
                     screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.Home,
-                    selected = currentScreen==HappyPlaceScreen.Start,
-                    onSelectTab = { onSelectTab(HappyPlaceScreen.Start) }
+                    selected = currentScreen == HappyPlaceScreen.Start,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.Start) },
+                    modifier = Modifier.weight(1f)
                 )
                 BottomBarButton(
                     screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.DateRange,
-                    selected = currentScreen==HappyPlaceScreen.Calendar,
-                    onSelectTab = { onSelectTab(HappyPlaceScreen.Calendar) }
+                    selected = currentScreen == HappyPlaceScreen.Calendar,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.Calendar) },
+                    modifier = Modifier.weight(1f)
                 )
                 BottomBarButton(
                     screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.ShoppingCart,
-                    selected = currentScreen==HappyPlaceScreen.ShoppingList,
-                    onSelectTab = { onSelectTab(HappyPlaceScreen.ShoppingList) }
+                    selected = currentScreen == HappyPlaceScreen.ShoppingList,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.ShoppingList) },
+                    modifier = Modifier.weight(1f)
                 )
                 BottomBarButton(
                     screenNameId = HappyPlaceScreen.Start.screenNameId,
                     imageVector = Icons.Filled.AccountCircle,
-                    selected = currentScreen==HappyPlaceScreen.Profile,
-                    onSelectTab = { onSelectTab(HappyPlaceScreen.Profile) }
+                    selected = currentScreen == HappyPlaceScreen.Profile,
+                    onSelectTab = { onSelectTab(HappyPlaceScreen.Profile) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -165,15 +207,19 @@ private fun BottomBarButton(
     screenNameId: Int,
     imageVector: ImageVector,
     onSelectTab: () -> Unit,
-    selected: Boolean
+    selected: Boolean,
+    modifier: Modifier = Modifier
 ) {
     IconButton(
-        onClick = onSelectTab
+        onClick = onSelectTab,
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) Color.LightGray else Color.Transparent)
     ) {
         Icon(
             imageVector = imageVector,
-            tint = if(selected) Color.DarkGray else Color.Gray,
-            contentDescription = stringResource(screenNameId)
+            tint = if(selected) Color(0xFF005500) else Color.Gray,
+            contentDescription = stringResource(screenNameId),
         )
     }
 }
@@ -182,10 +228,14 @@ private fun BottomBarButton(
 fun AddItemFloatingActionButton(onClick: () -> Unit, buttonTitleId: Int) {
     ExtendedFloatingActionButton(
         onClick = onClick,
-        containerColor = Color.Gray,
+        containerColor = Color(0xFF005500),
         contentColor = Color.White,
         icon = { Icon(Icons.Filled.Add, "Extended floating action button.") },
-        text = { Text(text = stringResource(buttonTitleId)) },
+        text = { Text(
+            text = stringResource(buttonTitleId),
+            fontWeight = FontWeight.SemiBold,
+            //fontSize = 20.dp
+        ) },
     )
 }
 

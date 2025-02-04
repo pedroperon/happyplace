@@ -1,7 +1,10 @@
 package com.example.happyplace
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -39,10 +42,16 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var shoppingListViewModel: ShoppingListViewModel
     private lateinit var tasksCalendarViewModel: TasksCalendarViewModel
+    private var lastTaskListUpdateTime : Long = 0
+
+    private lateinit var taskReminderNotificationsHandler: TaskReminderNotificationsHandler
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lastTaskListUpdateTime = 0
+        taskReminderNotificationsHandler = TaskReminderNotificationsHandler(this)
 
         // Shopping list initialization
         shoppingListViewModel =
@@ -87,6 +96,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        taskReminderNotificationsHandler.cancelAllNotifications()
+    }
+
+    override fun onPause() {
+        scheduleTaskNotifications()
+        super.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+    }
+
+    private fun scheduleTaskNotifications() {
+        // Create an explicit intent for an Activity in your app.
+        val intent = Intent(this, MainActivity::class.java)
+//            .apply {
+//            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//        }
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        taskReminderNotificationsHandler.scheduleTasksNotifications(
+            tasksCalendarViewModel.getTasksForNextDays(7),
+            pendingIntent)
+
+    }
+
     private fun observeShoppingListChanges() {
         shoppingListViewModel.shoppingListUiState.observe(this) { retrievedShoppingListUiModel ->
             shoppingListViewModel.setShoppingList(retrievedShoppingListUiModel)
@@ -95,6 +132,7 @@ class MainActivity : ComponentActivity() {
     private fun observeTasksListChanges() {
         tasksCalendarViewModel.tasksListUiState.observe(this) { retrievedTasksListUiModel ->
             tasksCalendarViewModel.setTasksList(retrievedTasksListUiModel)
+            lastTaskListUpdateTime = System.currentTimeMillis()
         }
     }
 }

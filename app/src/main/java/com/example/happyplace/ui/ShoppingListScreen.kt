@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,14 +24,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -75,7 +73,10 @@ fun ShoppingListScreen (
     ) {
         if (uiState.shoppingList.isEmpty()) {
             Text(
-                text = "Your shopping list is empty.\nTap \"Add item\" to start",
+                text = stringResource(
+                    R.string.shopping_list_is_empty_tap_to_start,
+                    stringResource(R.string.add_item)
+                ),
                 textAlign = TextAlign.Center,
                 color = Color.DarkGray
             )
@@ -116,7 +117,8 @@ fun ShoppingListScreen (
             // show delete item confirmation popup
             DeleteWarningPopupDialog(
                 titleResId = R.string.delete_item,
-                itemName = uiState.itemStagedForEdition?.name,
+                bodyText = stringResource(R.string.confirm_delete_question_with_name,
+                    uiState.itemStagedForEdition?.name ?: R.string.this_item),
                 onDismissRequest = {
                     shoppingListViewModel.dismissDeleteConfirmationDialog()
                 },
@@ -130,7 +132,7 @@ fun ShoppingListScreen (
             // show clear list confirmation dialog
             DeleteWarningPopupDialog(
                 titleResId = R.string.erase_list,
-                itemName = stringResource(R.string.everything),
+                bodyText = stringResource(R.string.confirm_delete_all_question),
                 onDismissRequest = {
                     shoppingListViewModel.dismissDeleteConfirmationDialog()
                 },
@@ -229,7 +231,7 @@ fun ShoppingListActionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
 @Composable
 fun DeleteWarningPopupDialog(
     titleResId: Int?,
-    itemName: String?,
+    bodyText: String,
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -253,12 +255,7 @@ fun DeleteWarningPopupDialog(
             Text(text = stringResource(titleResId ?: R.string.delete_item))
         },
         text = {
-            Text(text =
-            if (itemName == null)
-                stringResource(R.string.confirm_delete_question)
-            else
-                stringResource(R.string.confirm_delete_question_with_name, itemName)
-            )
+            Text(text = bodyText)
         }
     )
 }
@@ -291,7 +288,7 @@ fun ShoppingListItemCard(
                 else R.drawable.baseline_arrow_right_24
             ),
             contentDescription = null,
-            tint = if(item.isInCart) Color.Gray else LocalContentColor.current
+            tint = if (item.isInCart) Color.Gray else LocalContentColor.current
         )
         Column(Modifier.padding(horizontal = 8.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -436,10 +433,8 @@ fun ItemQuantityText(
     if(itemQuantity==null || itemQuantity.amount==0)
         return
 
-    val isPlural = itemQuantity.amount>1
     val t = "${itemQuantity.amount} " +
-                if(isPlural) itemQuantity.unit.name.lowercase()//PluralStringId
-                else itemQuantity.unit.name.lowercase()//SingularStringId
+            getUnitName(unit = itemQuantity.unit, plural = itemQuantity.amount>1)
 
     Text(
         text = "($t)",

@@ -1,15 +1,15 @@
 <resources>
     <string name="app_name" translatable="false">Happy Place</string>
-    <string name="grams">grams</string>
+    <string name="grams">g</string>
     <string name="liters">liters</string>
     <string name="kg">Kg</string>
-    <string name="cagette">Cagette</string>
-    <string name="biocoop">Biocoop</string>
-    <string name="bigretail">Grande surface</string>
-    <string name="bricolage">Bricolage</string>
-    <string name="marche">Marché</string>
-    <string name="dadison">Dadison</string>
-    <string name="gram">gram</string>
+    <string name="cagette" translatable="false">Cagette</string>
+    <string name="biocoop" translatable="false">Biocoop</string>
+    <string name="bigretail" translatable="false">Grande surface</string>
+    <string name="bricolage">DIY</string>
+    <string name="marche">Street market</string>
+    <string name="dadison" translatable="false">Dadison</string>
+    <string name="gram">g</string>
     <string name="kgs">Kg</string>
     <string name="liter">liter</string>
     <string name="unit">unit</string>
@@ -21,7 +21,7 @@
     <string name="appliance">appliance</string>
     <string name="create_new">Create new…</string>
     <string name="home_garden_diy">Home / Garden / DIY</string>
-    <string name="bulk">bulk</string>
+    <string name="bulk">Bulk</string>
     <string name="add_item">Add item</string>
     <string name="edit">edit</string>
     <string name="edit_item">Edit item</string>
@@ -33,8 +33,10 @@
     <string name="quantity">Quantity</string>
     <string name="details">Details</string>
     <string name="done">Done</string>
+    <string name="save">Save</string>
     <string name="expand_list">expand list</string>
     <string name="confirm_delete_question_with_name">Are you sure you want to delete %1$s?</string>
+    <string name="confirm_delete_all_question">Are you sure you want to delete everything?</string>
     <string name="none">"(none)"</string>
     <string name="shop">Shop:</string>
     <string name="category">Category:</string>
@@ -51,4 +53,11 @@
     <string name="new_task">New task</string>
     <string name="task">Task</string>
     <string name="tasks_of_the_day">Tasks of the day %1$s</string>
+    <string name="there_are_some_urgent_items_on_your_shopping_list">There are some urgent items on your shopping list:</string>
+    <string name="hello">Hello, %1$s</string>
+    <string name="it_s">It\'s %1$s</string>
+    <string name="relax_you_have_no_tasks_due_today">Relax! You have no tasks due today</string>
+    <string name="you_have_some_tasks_today">You have some tasks today:</string>
+    <string name="this_item">this item</string>
+    <string name="shopping_list_is_empty_tap_to_start">Your shopping list is empty.\nTap \"%1$s\" to start</string>
 </resources>

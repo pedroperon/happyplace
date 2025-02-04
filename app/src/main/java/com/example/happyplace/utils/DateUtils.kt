@@ -4,7 +4,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 fun LocalDate.startOfDayMillis() : Long {
-    return this.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+    return this.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
 fun LocalDate.lastMondayBeforeCurrentMonth() : LocalDate {
@@ -16,4 +16,8 @@ fun LocalDate.lastMondayBeforeCurrentMonth() : LocalDate {
 fun LocalDate.firstSundayAfterCurrentMonth() : LocalDate {
     val lastDayOfMonth = this.plusMonths(1).minusDays(1)
     return lastDayOfMonth.plusDays((6-lastDayOfMonth.dayOfWeek.ordinal).toLong())
+}
+
+fun LocalDate.containsDateTimeInMillis(timeInMillis:Long) : Boolean {
+    return timeInMillis in (this.startOfDayMillis()..<this.plusDays(1).startOfDayMillis())
 }

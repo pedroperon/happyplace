@@ -52,7 +52,9 @@ message LocalShoppingList {
 message User {
   string name = 1;
 }
-
+message LocalUsersList {
+  repeated User users = 1;
+}
 message Task {
   enum TaskType {
     NONE = 0;

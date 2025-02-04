@@ -1,5 +1,6 @@
 package com.example.happyplace.ui
 
+import android.icu.text.LocaleDisplayNames
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.happyplace.ItemQuantity
 import com.example.happyplace.ItemQuantity.MeasurementUnit
 import com.example.happyplace.R
 import com.example.happyplace.ShoppingListItem
@@ -119,8 +121,10 @@ fun EditItemInShoppingListDialog(
                     )
                     // UNIT
                     UnitDropdownMenu(
-                        viewModel,
-                        editItemUiState,
+                        itemQuantity = editItemUiState.itemBeingEdited.quantity,
+                        isExpanded = editItemUiState.unitDropDownExpanded,
+                        onToggleExpanded = { viewModel.toggleUnitDropDownOpen(it) },
+                        onChooseUnit = { viewModel.quantityUnitChosen(it) },
                         modifier = Modifier
                             .fillMaxWidth(0.5F)
                             .padding(8.dp))
@@ -132,7 +136,7 @@ fun EditItemInShoppingListDialog(
                         Checkbox(
                             checked = editItemUiState.itemBeingEdited.bulk,
                             onCheckedChange = { viewModel.setItemAsBulk(it) })
-                        Text(text = "Bulk")
+                        Text(text = stringResource(R.string.bulk))
                     }
                 }
                 // DETAILS
@@ -190,7 +194,7 @@ fun EditItemInShoppingListDialog(
                         },
                         enabled = editItemUiState.itemBeingEdited.name.isNotEmpty()
                     ) {
-                        Text(text = stringResource(R.string.done))
+                        Text(text = stringResource(R.string.save))
                     }
                 }
             }
@@ -287,41 +291,51 @@ fun OptionsDropdownMenu(
 
 @Composable
 private fun UnitDropdownMenu(
-    viewModel: EditItemViewModel,
-    editItemUiState: EditItemUiState,
+    itemQuantity: ItemQuantity?,
+    isExpanded: Boolean,
+    onToggleExpanded: (Boolean?) -> Unit,
+    onChooseUnit: (MeasurementUnit) -> Unit,
     modifier : Modifier = Modifier
 ) {
+    val plural = (itemQuantity?.amount ?: 1)>1
     Box(modifier = modifier) {
-        if(editItemUiState.itemBeingEdited.quantity!=null &&
-            editItemUiState.itemBeingEdited.quantity.amount!=0) {
+        if(itemQuantity!=null &&
+            itemQuantity.amount!=0) {
+
+            val unitName : String = getUnitName(
+                unit = itemQuantity.unit,
+                plural = plural)
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable(onClick = { viewModel.toggleUnitDropDownOpen() })
+                modifier = Modifier.clickable(onClick = { onToggleExpanded(null) })
             ) {
                 Text(
-                    text = editItemUiState.itemBeingEdited.quantity.unit.name.lowercase()
+                    text = unitName
                 )
                 Image(
                     painter = painterResource(R.drawable.baseline_arrow_right_24),
                     contentDescription = stringResource(R.string.expand_list),
-                    modifier = Modifier.rotate(if (editItemUiState.unitDropDownExpanded) 270F else 90F)
+                    modifier = Modifier.rotate(if (isExpanded) 270F else 90F)
                 )
             }
         }
         DropdownMenu(
-            expanded = editItemUiState.unitDropDownExpanded,
-            onDismissRequest = { viewModel.toggleUnitDropDownOpen(false) }
+            expanded = isExpanded,
+            onDismissRequest = { onToggleExpanded(false) }
         ) {
             MeasurementUnit.entries
                 .subList(0, MeasurementUnit.entries.size - 1) // excludes automatically generated UNRECOGNIZED
                 .forEach {
+                    val unitName : String = getUnitName(it, plural)
+
                     DropdownMenuItem(
                         text = {
-                            Text(text = it.name.lowercase())
+                            Text(text = unitName)
                         },
                         onClick = {
-                            viewModel.quantityUnitChosen(it)
-                            viewModel.toggleUnitDropDownOpen(false)
+                            onChooseUnit(it)
+                            onToggleExpanded(false)
                         }
                     )
                 }
@@ -329,12 +343,16 @@ private fun UnitDropdownMenu(
     }
 }
 
-//@Preview
-//@Composable
-//fun EditItemInShoppingListDialogPreview() {
-//    EditItemInShoppingListDialog(
-//        {},
-//        {},
-//        LocalShoppingListDataProvider.shoppingList[3]
-//    )
-//}
+@Composable
+fun getUnitName(unit:MeasurementUnit, plural:Boolean=false): String {
+    return unitNameIds[unit.name]?.get(if(plural) 1 else 0)
+        ?.let { id -> stringResource(id) }
+        ?: unit.name.lowercase()
+}
+
+private val unitNameIds = mapOf(
+    "UNIT" to arrayOf(R.string.unit, R.string.units),
+    "KG" to arrayOf(R.string.kg, R.string.kgs),
+    "GRAM" to arrayOf(R.string.gram, R.string.grams),
+    "LITER" to arrayOf(R.string.liter, R.string.liters)
+)

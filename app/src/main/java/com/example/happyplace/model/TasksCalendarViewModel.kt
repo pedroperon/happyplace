@@ -84,17 +84,24 @@ class TasksCalendarViewModel(
             .withDayOfMonth(1)
             .plusMonths(monthOffset.toLong())
 
-        val firstDayStartInMillis = firstDay.startOfDayMillis()
+        val firstDayOfMonthStartInMillis = firstDay.startOfDayMillis()
 
-        val lastDayStartInMillis = firstDay
+        val firstDayNextMonthStartInMillis = firstDay
             .plusMonths(1L)
-            .minusDays(1)
             .startOfDayMillis()
 
         return _uiState.value.tasks.filter {
-            it.initialDate in firstDayStartInMillis..lastDayStartInMillis
+            it.initialDate in firstDayOfMonthStartInMillis..<firstDayNextMonthStartInMillis
         }.sortedBy { it.initialDate }
     }
+
+    fun getTasksForNextDays(days: Long): List<Task> {
+        val start = LocalDate.now().startOfDayMillis()
+        val end = LocalDate.now().plusDays(days+1).startOfDayMillis()
+
+        return _uiState.value.tasks.filter {
+            it.initialDate in start..<end
+        }.sortedBy { it.initialDate }    }
 }
 
 class TasksCalendarViewModelFactory(

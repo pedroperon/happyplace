@@ -1,8 +1,11 @@
 package com.example.happyplace.ui
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,16 +44,40 @@ import com.example.happyplace.R
 import com.example.happyplace.Task
 import com.example.happyplace.model.EditTaskViewModel
 import com.example.happyplace.model.TasksCalendarViewModel
+import com.example.happyplace.utils.containsDateTimeInMillis
 import com.example.happyplace.utils.firstSundayAfterCurrentMonth
 import com.example.happyplace.utils.lastMondayBeforeCurrentMonth
-import com.example.happyplace.utils.startOfDayMillis
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.round
+
+const val MAX_MONTHS : Int = 1200 // 100 years
+const val INITIAL_MONTH_OFFSET = MAX_MONTHS/4
+
+@OptIn(ExperimentalFoundationApi::class)
+suspend fun PagerState.customAnimateScrollToPage(page: Int) {
+    scroll {
+        // Update the target page
+        updateTargetPage(page)
+
+        val distance = (page-currentPage) * layoutInfo.pageSize.toFloat()
+        var previousValue = 0.0f
+        animate(
+            0f,
+            distance,
+        ) { currentValue, _ ->
+            previousValue += scrollBy(currentValue - previousValue)
+        }
+    }
+}
 
 @Composable
 fun CalendarScreen(
@@ -57,21 +86,36 @@ fun CalendarScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by tasksCalendarViewModel.uiState.collectAsState()
+    val pagerState = rememberPagerState(initialPage = INITIAL_MONTH_OFFSET){ MAX_MONTHS }
 
     Box(modifier = modifier.fillMaxSize()) {
-        HorizontalPager(state = rememberPagerState(pageCount = { 12000 })) { monthOffset ->
+        val coroutineScope = rememberCoroutineScope()
+
+        val isDragged by pagerState.interactionSource.collectIsDraggedAsState() //.collectIsDraggedAsState()
+
+        HorizontalPager(state = pagerState) { page ->
+            val monthOffset = page - INITIAL_MONTH_OFFSET
             val tasks = tasksCalendarViewModel.getTasksForMonth(monthOffset)
+
             Column {
                 DaysOfTheWeekInitialsHeader()
                 Box(modifier = modifier
                     .fillMaxHeight()
                     .background(Color.White)
                     .clickable { tasksCalendarViewModel.toggleShowDay(null) }
-                    .verticalScroll(rememberScrollState(0))
                 ) {
                     MonthBox(
                         monthOffset = monthOffset,
-                        onClickDay = { tasksCalendarViewModel.toggleShowDay(it) },
+                        onClickDay = {
+                            tasksCalendarViewModel.toggleShowDay(it)
+
+                            // if day in another (adjacent) month, scroll to correct month
+                            val delta = LocalDate.ofEpochDay(it!!).monthValue -
+                                    LocalDate.now().plusMonths(monthOffset.toLong()).monthValue
+                            coroutineScope.launch {
+                                pagerState.customAnimateScrollToPage(pagerState.currentPage+delta)
+                            }
+                                     },
                         expandedDay = uiState.expandedDay,
                         tasksInMonth = tasks,
                         modifier = Modifier.fillMaxWidth()
@@ -88,11 +132,17 @@ fun CalendarScreen(
                 tasksCalendarViewModel.closeEditTaskDialog()
                 editTaskViewModel.setTaskBeingEdited(null)
                                },
-            onClickSave = { tasksCalendarViewModel.saveTask(it) },
+            onClickSave = {
+                tasksCalendarViewModel.saveTask(it)
+                askPermissionForNotifications()
+                          },
             editTaskViewModel = editTaskViewModel
         )
     }
+}
 
+fun askPermissionForNotifications() {
+    //TODO("Not yet implemented")
 }
 
 @Composable
@@ -115,19 +165,20 @@ fun MonthBox(
             text = firstDayOfMonth.month.getDisplayName(TextStyle.FULL,Locale.getDefault()),
             fontSize = 50.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFEEEEEE),
-            modifier = Modifier.padding(16.dp).fillMaxSize()
+            color = Color(0xFFF2F2F2),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(36.dp).fillMaxSize()
         )
 
-        Column {
+        Column(modifier = Modifier.fillMaxSize()) {
             repeat(dayRowsTotal) { weekCount ->
                 WeekBox(
-                    startDay.plusWeeks(weekCount.toLong()),
-                    onClickDay,
-                    expandedDay,
-                    firstDayOfMonth,
-                    today,
-                    tasksInMonth
+                    startDay = startDay.plusWeeks(weekCount.toLong()),
+                    onClickDay = onClickDay,
+                    expandedDay = expandedDay,
+                    firstDayOfMonth = firstDayOfMonth,
+                    today = today,
+                    tasksInMonth = tasksInMonth
                 )
             }
         }
@@ -141,31 +192,29 @@ private fun WeekBox(
     expandedDay: Long?,
     firstDayOfMonth: LocalDate?,
     today: LocalDate?,
-    tasksInMonth: List<Task>
+    tasksInMonth: List<Task>,
 ) {
-    Row {
-        repeat(7) { dayCount ->
-            val day = startDay.plusDays(dayCount.toLong())
-            val isInMonth = (day.withDayOfMonth(1)==firstDayOfMonth)
-            DayBox(
-                day = day,
-                onClick = {
-                    onClickDay(it)
-                    if(!isInMonth) {}
-                          },
-                isExpanded = (day.toEpochDay() == expandedDay),
-                isToday = (day == today),
-                tasks = tasksInMonth.filter { it.initialDate == day.startOfDayMillis() },
-                isInMonth = (firstDayOfMonth == day.withDayOfMonth(1)),
-                modifier = Modifier.weight(1F)
-            )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row {
+            repeat(7) { dayCount ->
+                val day = startDay.plusDays(dayCount.toLong())
+                DayBox(
+                    day = day,
+                    onClick = onClickDay,
+                    isExpanded = (day.toEpochDay() == expandedDay),
+                    isToday = (day == today),
+                    tasksOfTheDay = tasksInMonth.filter { day.containsDateTimeInMillis(it.initialDate) },
+                    isInMonth = (firstDayOfMonth == day.withDayOfMonth(1)),
+                    modifier = Modifier.weight(1F)
+                )
+            }
         }
+        DayTasksBox(
+            epochDay = expandedDay,
+            weekStart = startDay,
+            tasks = tasksInMonth
+        )
     }
-    DayTasksBox(
-        epochDay = expandedDay,
-        weekStart = startDay,
-        tasks = tasksInMonth
-    )
 }
 
 @Composable
@@ -180,7 +229,7 @@ fun DayTasksBox(epochDay: Long?, weekStart: LocalDate, tasks: List<Task>) {
             (epochDay - weekStart.toEpochDay()) in 0..<7
         ) {
             val dayTasks = tasks.filter {
-                it.initialDate == LocalDate.ofEpochDay(epochDay).startOfDayMillis()
+                LocalDate.ofEpochDay(epochDay).containsDateTimeInMillis(it.initialDate)
             }
 
             if (dayTasks.isNotEmpty()) {
@@ -197,8 +246,10 @@ fun DayTasksBox(epochDay: Long?, weekStart: LocalDate, tasks: List<Task>) {
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    for (task in dayTasks) {
-                        TaskBox(task)
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState(0))) {
+                        for (task in dayTasks) {
+                            TaskBox(task)
+                        }
                     }
                 }
             }
@@ -213,12 +264,20 @@ fun TaskBox(task:Task) {
             .padding(vertical = 8.dp)
             .fillMaxWidth()
     ) {
-        val color = Color.DarkGray //TODO: make this dependent on taks type
+        val color = Color.DarkGray //TODO: make this dependent on task type
+        val dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(task.initialDate), ZoneId.systemDefault())
+
         Icon(painterResource(R.drawable.baseline_arrow_right_24), null, tint = color)
-        Text(text = task.name,
+        Text(
+            text = dateTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Text(
+            text = task.name,
             //fontWeight = FontWeight.W400,
             color = color,
-            modifier = Modifier.padding(horizontal = 4.dp))
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
     }
 }
 
@@ -228,11 +287,11 @@ private fun DayBox (
     onClick: (Long) -> Unit,
     isExpanded: Boolean,
     isToday: Boolean,
-    tasks: List<Task>,
+    tasksOfTheDay: List<Task>,
     isInMonth: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val shape = if(tasks.isEmpty())
+    val shape = if(tasksOfTheDay.isEmpty())
         RoundedCornerShape(12.dp)
     else
         RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
@@ -254,7 +313,7 @@ private fun DayBox (
                 modifier = Modifier.weight(1f)
             )
             var dots = ""
-            for (task in tasks) {
+            for (task in tasksOfTheDay) {
                 // 1 dot for each task in this day
                 dots += "·"
             }
