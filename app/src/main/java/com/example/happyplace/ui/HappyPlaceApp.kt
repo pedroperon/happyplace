@@ -81,7 +81,7 @@ fun HappyPlaceApp(
 
     Scaffold(
         bottomBar = {
-            HappyPlaceNavigationBar(currentScreen) { currentScreen = it }
+            HappyPlaceNavigationBar(currentScreen = currentScreen, onSelectTab = { currentScreen=it })
         },
         topBar = {
             HappyPlaceTopBar(currentScreen)
@@ -121,7 +121,9 @@ fun HappyPlaceApp(
                 HappyPlaceScreen.Start ->
                     OverviewScreen(
                         shoppingListViewModel = shoppingListViewModel,
-                        tasksCalendarViewModel = tasksCalendarViewModel
+                        tasksCalendarViewModel = tasksCalendarViewModel,
+                        onCallCalendarScreen = { currentScreen = HappyPlaceScreen.Calendar },
+                        onCallShoppingListScreen = {currentScreen = HappyPlaceScreen.ShoppingList},
                     )
 
                 HappyPlaceScreen.ShoppingList ->

@@ -107,7 +107,7 @@ class TaskReminderNotificationsHandler(private val context: Context) {
                 taskLocalDateTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.MEDIUM))
             )
             notificationDetailBundle.putString(TASK_DESCRIPTION_TEXT_KEY,
-                "You have un upcoming task for ${taskLocalDateTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.MEDIUM))}. " +
+                "You have an upcoming task for ${taskLocalDateTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.MEDIUM))}. " +
                         "Tap for further details"
             )
 

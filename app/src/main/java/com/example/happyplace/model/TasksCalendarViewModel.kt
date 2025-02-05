@@ -65,17 +65,26 @@ class TasksCalendarViewModel(
         }
     }
 
-    fun toggleShowDay(epochDay: Long?) {
+    fun toggleShowDay(epochDay:Long?, allowUnselect:Boolean=true) : Boolean {
+        var wasSelected = false
         _uiState.update { currentState ->
+            wasSelected = (currentState.expandedDay==epochDay)
             currentState.copy(
-                expandedDay = if(currentState.expandedDay==epochDay) null else epochDay
+                expandedDay = if(wasSelected && allowUnselect) null else epochDay
             )
         }
+        return !(wasSelected && allowUnselect)
     }
 
     fun saveTask(task: Task) {
         viewModelScope.launch {
                 tasksListRepository.saveTask(task)
+        }
+    }
+
+    fun deleteTask(task: Task) {
+        viewModelScope.launch {
+            tasksListRepository.deleteTask(task)
         }
     }
 
@@ -101,7 +110,8 @@ class TasksCalendarViewModel(
 
         return _uiState.value.tasks.filter {
             it.initialDate in start..<end
-        }.sortedBy { it.initialDate }    }
+        }.sortedBy { it.initialDate }
+    }
 }
 
 class TasksCalendarViewModelFactory(

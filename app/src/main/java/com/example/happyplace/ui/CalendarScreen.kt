@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -107,18 +108,21 @@ fun CalendarScreen(
                     MonthBox(
                         monthOffset = monthOffset,
                         onClickDay = {
-                            tasksCalendarViewModel.toggleShowDay(it)
+                            val selected = tasksCalendarViewModel.toggleShowDay(it)
 
                             // if day in another (adjacent) month, scroll to correct month
-                            val delta = LocalDate.ofEpochDay(it!!).monthValue -
-                                    LocalDate.now().plusMonths(monthOffset.toLong()).monthValue
-                            coroutineScope.launch {
-                                pagerState.customAnimateScrollToPage(pagerState.currentPage+delta)
+                            if(selected) {
+                                val delta = LocalDate.ofEpochDay(it!!).monthValue -
+                                        LocalDate.now().plusMonths(monthOffset.toLong()).monthValue
+                                coroutineScope.launch {
+                                    pagerState.customAnimateScrollToPage(pagerState.currentPage + delta)
+                                }
                             }
                                      },
                         expandedDay = uiState.expandedDay,
                         tasksInMonth = tasks,
-                        modifier = Modifier.fillMaxWidth()
+                        onClickTask = {tasksCalendarViewModel.deleteTask(it)},
+                    modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -151,6 +155,7 @@ fun MonthBox(
     onClickDay: (Long?) -> Unit,
     expandedDay: Long?,
     tasksInMonth: List<Task>,
+    onClickTask:(Task)->Unit,
     modifier: Modifier = Modifier
 ) {
     val today = LocalDate.now()
@@ -178,7 +183,8 @@ fun MonthBox(
                     expandedDay = expandedDay,
                     firstDayOfMonth = firstDayOfMonth,
                     today = today,
-                    tasksInMonth = tasksInMonth
+                    tasksInMonth = tasksInMonth,
+                    onClickTask = onClickTask
                 )
             }
         }
@@ -193,6 +199,7 @@ private fun WeekBox(
     firstDayOfMonth: LocalDate?,
     today: LocalDate?,
     tasksInMonth: List<Task>,
+    onClickTask:(Task)->Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row {
@@ -212,13 +219,17 @@ private fun WeekBox(
         DayTasksBox(
             epochDay = expandedDay,
             weekStart = startDay,
-            tasks = tasksInMonth
+            tasks = tasksInMonth,
+            onClickTask = onClickTask
         )
     }
 }
 
 @Composable
-fun DayTasksBox(epochDay: Long?, weekStart: LocalDate, tasks: List<Task>) {
+fun DayTasksBox(epochDay: Long?,
+                weekStart: LocalDate,
+                tasks: List<Task>,
+                onClickTask: (Task)->Unit) {
 
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -248,7 +259,7 @@ fun DayTasksBox(epochDay: Long?, weekStart: LocalDate, tasks: List<Task>) {
                     )
                     Column(modifier = Modifier.verticalScroll(rememberScrollState(0))) {
                         for (task in dayTasks) {
-                            TaskBox(task)
+                            TaskBox(task, onDoubleClick = onClickTask)
                         }
                     }
                 }
@@ -256,11 +267,13 @@ fun DayTasksBox(epochDay: Long?, weekStart: LocalDate, tasks: List<Task>) {
         }
     }
 }
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TaskBox(task:Task) {
+fun TaskBox(task:Task, onClick:((Task)->Unit)={}, onDoubleClick:((Task)->Unit)={}) {
     Row(verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clickable {  }
+            //.clickable { onClick(task) }
+            .combinedClickable(onDoubleClick = { onDoubleClick(task) }) { onClick(task) }
             .padding(vertical = 8.dp)
             .fillMaxWidth()
     ) {

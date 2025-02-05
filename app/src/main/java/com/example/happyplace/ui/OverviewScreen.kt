@@ -14,8 +14,9 @@ import com.example.happyplace.R
 import com.example.happyplace.model.ShoppingListViewModel
 import com.example.happyplace.model.TasksCalendarViewModel
 import com.example.happyplace.utils.containsDateTimeInMillis
-import com.example.happyplace.utils.startOfDayMillis
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -23,8 +24,10 @@ import java.time.format.FormatStyle
 fun OverviewScreen(
     shoppingListViewModel: ShoppingListViewModel,
     tasksCalendarViewModel: TasksCalendarViewModel,
-    modifier: Modifier = Modifier
-) {
+    onCallCalendarScreen: () -> Unit,
+    onCallShoppingListScreen: () -> Unit,
+    modifier: Modifier = Modifier,
+    ) {
     val shoppingListUiState by shoppingListViewModel.uiState.collectAsState()
     val tasksUiState by tasksCalendarViewModel.uiState.collectAsState()
 
@@ -56,7 +59,13 @@ fun OverviewScreen(
             Column {
                 Text(text = stringResource(R.string.you_have_some_tasks_today))
                 for(task in todayTasks.sortedBy { it.initialDate }) {
-                    TaskBox(task)
+                    TaskBox(task = task, onClick = {
+                        onCallCalendarScreen()
+                        tasksCalendarViewModel.toggleShowDay(
+                            LocalDate.ofInstant(Instant.ofEpochMilli(it.initialDate), ZoneId.systemDefault()).toEpochDay(),
+                            allowUnselect = false
+                        )
+                    })
                 }
             }
         }
