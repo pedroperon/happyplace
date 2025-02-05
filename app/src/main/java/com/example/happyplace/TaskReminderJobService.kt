@@ -28,7 +28,7 @@ const val TASK_DATE_STRING_KEY = "TASK_DATE_FORMAT_STRING"
 const val TASK_DATE_MILLI_KEY = "TASK_DATE_MILLI"
 const val TASK_DESCRIPTION_TEXT_KEY = "TASK_DESCRIPTION"
 
-class TaskReminderJobService() : JobService() {
+class TaskReminderJobService : JobService() {
 
     override fun onStartJob(params: JobParameters?): Boolean {
         val title = "Reminder: ${params?.extras?.getString(TASK_NAME_KEY) ?: ""}"
@@ -63,9 +63,11 @@ class TaskReminderJobService() : JobService() {
 
 class TaskReminderNotificationsHandler(private val context: Context) {
 
-    private val notificationManager: NotificationManager = context.getSystemService(
-        NOTIFICATION_SERVICE
-    ) as NotificationManager
+    private val notificationManager =
+        context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+    private val notificationScheduler =
+        context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
 
     init {
         createNotificationChannel()
@@ -73,6 +75,7 @@ class TaskReminderNotificationsHandler(private val context: Context) {
 
     fun cancelAllNotifications() {
         notificationManager.cancelAll()
+        notificationScheduler.cancelAll()
     }
 
     private fun createNotificationChannel() {
@@ -90,10 +93,6 @@ class TaskReminderNotificationsHandler(private val context: Context) {
     }
 
     fun scheduleTasksNotifications(tasks: List<Task>, pendingIntent: PendingIntent) {
-
-        val notificationScheduler =
-            context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-
         for (task in tasks) {
             val delay = task.initialDate - System.currentTimeMillis()
             if(delay<0) continue
