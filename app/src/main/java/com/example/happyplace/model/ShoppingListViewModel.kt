@@ -6,6 +6,7 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.example.happyplace.LocalShoppingList
+import com.example.happyplace.ShoppingListFilter
 import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.data.ShoppingListRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,13 +19,14 @@ enum class PopupDisplayState {
     NONE,
     DELETE_ITEM,
     CLEAR_LIST,
-    EDIT_ITEM,
-    FILTER
+    EDIT_ITEM
 }
 
 data class ShoppingListUiState(
     val shoppingList: List<ShoppingListItem> = listOf(),
     val popupDisplayState: PopupDisplayState = PopupDisplayState.NONE,
+    val showFilterParams: Boolean = false,
+    val filterParams: ShoppingListFilter? = null,
     val itemStagedForEdition: ShoppingListItem? = null,
     val shopsList: List<String> = listOf(),
     val categoriesList: List<String> = listOf()
@@ -127,8 +129,10 @@ class ShoppingListViewModel(
             it.copy(
                 shoppingList = retrievedShoppingList.itemsList,
                 shopsList = retrievedShoppingList.shopsList,
-                categoriesList = retrievedShoppingList.categoriesList
-            )
+                categoriesList = retrievedShoppingList.categoriesList,
+                filterParams = retrievedShoppingList.filter,
+
+                )
         }
     }
 
@@ -143,10 +147,16 @@ class ShoppingListViewModel(
     }
 
     fun showFilterDialog() {
-        _uiState.update {
-            it.copy(
-                popupDisplayState = PopupDisplayState.FILTER
+        _uiState.update { currentState ->
+            currentState.copy(
+                showFilterParams = !(currentState.showFilterParams)
             )
+        }
+    }
+
+    fun updateFilter(newFilter: ShoppingListFilter) {
+        viewModelScope.launch {
+            shoppingListRepository.updateFilter(newFilter)
         }
     }
 }

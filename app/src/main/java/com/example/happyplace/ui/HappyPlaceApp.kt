@@ -9,9 +9,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -41,6 +44,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.happyplace.R
 import com.example.happyplace.model.ShoppingListViewModel
@@ -96,7 +100,7 @@ fun HappyPlaceApp(
                 }
                 HappyPlaceScreen.Calendar -> {
                     AddItemFloatingActionButton(
-                        buttonTitleId = R.string.add_task,
+                        buttonTitleId = R.string.new_task,
                         onClick = {
                             tasksCalendarViewModel.openNewTaskDialog()
 
@@ -232,7 +236,7 @@ fun AddItemFloatingActionButton(onClick: () -> Unit, buttonTitleId: Int) {
         onClick = onClick,
         containerColor = Color(0xFF005500),
         contentColor = Color.White,
-        icon = { Icon(Icons.Filled.Add, "Extended floating action button.") },
+        icon = { Icon(Icons.Rounded.Add, "Extended floating action button.", Modifier.size(32.dp)) },
         text = { Text(
             text = stringResource(buttonTitleId),
             fontWeight = FontWeight.SemiBold,

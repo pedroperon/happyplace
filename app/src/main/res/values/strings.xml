@@ -49,7 +49,7 @@
     <string name="shopping_list">Shopping list</string>
     <string name="parameters">Parameters</string>
     <string name="my_shopping_List">My shopping list</string>
-    <string name="add_task">New task</string>
+    <string name="add_task">Add task</string>
     <string name="new_task">New task</string>
     <string name="task">Task</string>
     <string name="tasks_of_the_day">Tasks of the day %1$s</string>
@@ -60,4 +60,5 @@
     <string name="you_have_some_tasks_today">You have some tasks today:</string>
     <string name="this_item">this item</string>
     <string name="shopping_list_is_empty_tap_to_start">Your shopping list is empty.\nTap \"%1$s\" to start</string>
+    <string name="show_already_bought">Show items already bought</string>
 </resources>

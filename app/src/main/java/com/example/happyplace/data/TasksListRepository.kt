@@ -38,11 +38,12 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
     suspend fun deleteTask(task: Task) {
         tasksListStore.updateData { tasksList ->
             val index = tasksList.tasksList.indexOf(task)
-            tasksList
-                .toBuilder().apply {
-                    if(index>=0)
-                        removeTasks(index)
-                }
+            if(index<0)
+                tasksList
+            else
+                tasksList
+                .toBuilder()
+                .removeTasks(index)
                 .build()
         }
     }

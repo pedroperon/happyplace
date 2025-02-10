@@ -3,6 +3,7 @@ package com.example.happyplace.data
 import android.util.Log
 import androidx.datastore.core.DataStore
 import com.example.happyplace.LocalShoppingList
+import com.example.happyplace.ShoppingListFilter
 import com.example.happyplace.ShoppingListItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -57,10 +58,10 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
     suspend fun deleteItem(item: ShoppingListItem) {
         shoppingListStore.updateData { currentData ->
             val index = currentData.itemsList.indexOf(item)
-            if(index>=0)
-                currentData.toBuilder().removeItems(index).build()
-            else
+            if(index<0)
                 currentData
+            else
+                currentData.toBuilder().removeItems(index).build()
         }
     }
 
@@ -76,9 +77,8 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
     }
 
     suspend fun updateItem(item: ShoppingListItem, itemIndex: Int) {
-        shoppingListStore.updateData { currentData ->
-            currentData
-                .toBuilder()
+        shoppingListStore.updateData {
+            it.toBuilder()
                 .setItems(itemIndex,item)
                 .build()
         }
@@ -105,6 +105,12 @@ class ShoppingListRepository (private val shoppingListStore: DataStore<LocalShop
     suspend fun clearList() {
         shoppingListStore.updateData { currentData ->
             currentData.toBuilder().clearItems().build()
+        }
+    }
+
+    suspend fun updateFilter(newFilter: ShoppingListFilter) {
+        shoppingListStore.updateData {
+            it.toBuilder().setFilter(newFilter).build()
         }
     }
 }

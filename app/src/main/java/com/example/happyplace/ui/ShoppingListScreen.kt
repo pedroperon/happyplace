@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -55,7 +56,9 @@ import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.model.EditItemViewModel
 import com.example.happyplace.model.ShoppingListViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.happyplace.ShoppingListFilter
 import com.example.happyplace.model.PopupDisplayState
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.text.DateFormat
 import java.util.Date
 
@@ -83,8 +86,11 @@ fun ShoppingListScreen (
         } else {
             Column {
                 ShoppingListActionsBar(
+                    showFilterParams = uiState.showFilterParams,
                     onClickDeleteAll = { shoppingListViewModel.showClearAllConfirmationDialog() },
-                    onClickFilter = { shoppingListViewModel.showFilterDialog() }
+                    onClickFilter = { shoppingListViewModel.showFilterDialog() },
+                    filterParams = uiState.filterParams,
+                    onChangeFilter = { shoppingListViewModel.updateFilter(it) }
                 )
                 ShoppingList(
                     itemsList = uiState.shoppingList,
@@ -141,15 +147,56 @@ fun ShoppingListScreen (
                 }
             )
         }
-        PopupDisplayState.FILTER -> {
-            FilterListPopupDialog()
-        }
         else -> {}
     }
 }
 
 @Composable
-fun FilterListPopupDialog() {
+fun FilterParametersBox(filterParams: ShoppingListFilter?,
+                        onChangeFilter: (ShoppingListFilter)->Unit,
+                        modifier : Modifier = Modifier) {
+    Box(modifier = modifier) {
+        Column(Modifier.fillMaxWidth()) {
+
+            // ONLY REMAINING?
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            ) {
+                Checkbox(
+                    checked = !(filterParams?.onlyRemaining ?: false),
+                    onCheckedChange = {}// onChangeFilter(filterParams.setBulk(it)) }
+                )
+                Text(text = stringResource(R.string.show_already_bought))
+            }
+
+            // BULK?
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            ) {
+                Checkbox(
+                    checked = filterParams?.bulk ?: false,
+                    onCheckedChange = { } ) //onChangeFilter(filterParams.setBulk(it)) })
+                Text(text = stringResource(R.string.bulk))
+            }
+        }
+    }
+
+//    message ShoppingListFilter {
+//        bool onlyRemaining = 1;
+//        string category = 2;
+//        string shop = 3;
+//        bool urgent = 4;
+//        bool bulk = 5;
+//
+//        enum SortOrder {
+//            NONE = 0;
+//            DATE = 1;
+//            NAME = 2;
+//        }
+//        SortOrder sortOrder = 6;
+//    }
 }
 
 @Composable
@@ -195,35 +242,58 @@ private fun ShoppingList(
 }
 
 @Composable
-fun ShoppingListActionsBar(onClickDeleteAll:()->Unit, onClickFilter:()->Unit) {
-
-    Row(horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color = Color.LightGray)
-            .padding(8.dp)
+fun ShoppingListActionsBar(
+    showFilterParams: Boolean,
+    onClickDeleteAll: () -> Unit,
+    onClickFilter: () -> Unit,
+    filterParams: ShoppingListFilter?,
+    onChangeFilter: (ShoppingListFilter)->Unit,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onClickFilter() }
-        ) {
-            Icon(
-                Icons.Filled.Menu,
-                stringResource(R.string.filter_options),
-                tint = Color.Gray
-            )
-            Text(text = stringResource(R.string.filter), color = Color.Gray)
-        }
 
-        Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onClickDeleteAll() }
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .background(color = Color.LightGray)
+        .padding(8.dp)
+        .animateContentSize()
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+
         ) {
-            Icon(
-                Icons.Filled.Delete,
-                stringResource(R.string.clear_list),
-                tint = Color.Gray
-            )
-            Text(text = stringResource(R.string.clear_list), color = Color.Gray)
+            Row(verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onClickFilter() }
+            ) {
+                val color = if(showFilterParams) Color.Black else Color.Gray
+                Icon(
+                    Icons.Filled.Menu,
+                    stringResource(R.string.filter_options),
+                    tint = color
+                )
+                Text(
+                    text = stringResource(R.string.filter),
+                    fontWeight = if(showFilterParams) FontWeight.SemiBold else FontWeight.Normal,
+                    color = color)
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onClickDeleteAll() }
+            ) {
+                Icon(
+                    Icons.Filled.Delete,
+                    stringResource(R.string.clear_list),
+                    tint = Color.Gray
+                )
+                Text(text = stringResource(R.string.clear_list), color = Color.Gray)
+            }
+        }
+        if(showFilterParams) {
+            FilterParametersBox(
+                filterParams = filterParams,
+                onChangeFilter = onChangeFilter,
+                modifier = Modifier.fillMaxWidth().padding(16.dp))
         }
     }
 }
@@ -276,9 +346,10 @@ fun ShoppingListItemCard(
         .background(bgColorForItem(item))
         .combinedClickable(
             onDoubleClick = { toggleItemInCart(item) }
-        ) { }
-        .clickable { toggleExpandCard(item) }
+        ) { toggleExpandCard(item) }
+        //.clickable { toggleExpandCard(item) }
         .padding(8.dp)
+        //.horizontalScroll(rememberScrollState())
         .animateContentSize(),
         verticalAlignment = Alignment.Top
     ) {
@@ -293,7 +364,7 @@ fun ShoppingListItemCard(
         Column(Modifier.padding(horizontal = 8.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 // NAME + QUANTITY + TAGS
-                Column {
+                Column(Modifier.weight(1F)) {
                     // name + quantity
                     NameAndQuantityText(item)
 
@@ -311,7 +382,6 @@ fun ShoppingListItemCard(
                         }
                     }
                 }
-                Spacer(Modifier.weight(1F))
                 // EXPAND CARD BUTTON
                 Icon(
                     painter = painterResource(
@@ -413,6 +483,8 @@ fun TagBox(text: String?) {
             fontSize = 12.sp,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .padding(horizontal = 4.dp)
                 .background(Color.LightGray)

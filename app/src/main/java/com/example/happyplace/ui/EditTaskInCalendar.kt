@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -102,7 +103,9 @@ fun EditTaskPopupDialog(
                     text = stringResource(R.string.new_task),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
                 )
 
                 OutlinedTextField(
@@ -118,7 +121,12 @@ fun EditTaskPopupDialog(
                         imeAction = ImeAction.Next,
                         capitalization = KeyboardCapitalization.Sentences
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged {
+                            if (!it.isFocused)
+                                editTaskViewModel.updateName(editTaskUiState.taskBeingEdited.name.trim())
+                        }
                 )
 
                 // DATE

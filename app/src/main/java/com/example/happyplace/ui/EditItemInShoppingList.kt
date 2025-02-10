@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -102,7 +103,12 @@ fun EditItemInShoppingListDialog(
                         imeAction = ImeAction.Next,
                         capitalization = KeyboardCapitalization.Sentences
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged {
+                            if (!it.isFocused)
+                                viewModel.updateName(editItemUiState.itemBeingEdited.name.trim())
+                        }
                 )
                 // QUANTITY + UNIT
                 Row(verticalAlignment = Alignment.CenterVertically) {
