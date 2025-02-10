@@ -27,7 +27,7 @@ message ShoppingListItem {
 }
 
 message ShoppingListFilter {
-  bool onlyRemaining = 1;
+  bool hideAlreadyInCart = 1;
   string category = 2;
   string shop = 3;
   bool urgent = 4;

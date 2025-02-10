@@ -56,5 +56,8 @@
     <string name="this_item">cet article</string>
     <string name="kg">Kg</string>
     <string name="shopping_list_is_empty_tap_to_start">Votre liste de courses est vide.\nAppuyez sur \"%1$s\" pour commencer</string>
-    <string name="show_already_bought">Montrer articles déjà achetés</string>
+    <string name="hide_already_bought">Cacher articles déjà achetés</string>
+    <string name="bulk_only">Vrac seulement</string>
+    <string name="urgent_on_top">Montrer urgents en haut</string>
+    <string name="no_item_matches_filter">Aucun article ne correspond à vos filtres.\nChangez les paramètres des filtres ou ajoutez de nouveaux articles.</string>
 </resources>

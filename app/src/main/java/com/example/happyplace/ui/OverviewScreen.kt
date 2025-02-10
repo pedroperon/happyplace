@@ -16,6 +16,7 @@ import com.example.happyplace.model.TasksCalendarViewModel
 import com.example.happyplace.utils.containsDateTimeInMillis
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -41,7 +42,7 @@ fun OverviewScreen(
             LocalDate.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
         ))
 
-        val urgentItems = shoppingListUiState.shoppingList.filter { it.urgent }
+        val urgentItems = shoppingListUiState.shoppingList.filter { it.urgent && !it.isInCart }
         if(urgentItems.isNotEmpty()) {
             Column {
                 Text(text = stringResource(R.string.there_are_some_urgent_items_on_your_shopping_list))

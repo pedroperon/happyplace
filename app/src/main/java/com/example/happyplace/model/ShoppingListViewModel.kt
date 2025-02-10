@@ -26,10 +26,11 @@ data class ShoppingListUiState(
     val shoppingList: List<ShoppingListItem> = listOf(),
     val popupDisplayState: PopupDisplayState = PopupDisplayState.NONE,
     val showFilterParams: Boolean = false,
-    val filterParams: ShoppingListFilter? = null,
     val itemStagedForEdition: ShoppingListItem? = null,
     val shopsList: List<String> = listOf(),
-    val categoriesList: List<String> = listOf()
+    val categoriesList: List<String> = listOf(),
+    // step to take it out of proto and into preferences data store
+    val filterParams: ShoppingListFilter = ShoppingListFilter.newBuilder().build()
 )
 
 class ShoppingListViewModel(
@@ -146,7 +147,13 @@ class ShoppingListViewModel(
         }
     }
 
-    fun showFilterDialog() {
+    fun showFilterDialog(show:Boolean) {
+        _uiState.update { it.copy(
+                showFilterParams = show
+            )
+        }
+    }
+    fun toggleShowFilterDialog() {
         _uiState.update { currentState ->
             currentState.copy(
                 showFilterParams = !(currentState.showFilterParams)
@@ -155,6 +162,7 @@ class ShoppingListViewModel(
     }
 
     fun updateFilter(newFilter: ShoppingListFilter) {
+        _uiState.update { it.copy(filterParams = newFilter) }
         viewModelScope.launch {
             shoppingListRepository.updateFilter(newFilter)
         }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,7 +60,6 @@ import com.example.happyplace.model.ShoppingListViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.happyplace.ShoppingListFilter
 import com.example.happyplace.model.PopupDisplayState
-import kotlinx.coroutines.flow.MutableStateFlow
 import java.text.DateFormat
 import java.util.Date
 
@@ -74,6 +75,8 @@ fun ShoppingListScreen (
         .fillMaxSize()
         .wrapContentSize()
     ) {
+        val displayedItems = applyFilters(uiState.filterParams, uiState.shoppingList)
+
         if (uiState.shoppingList.isEmpty()) {
             Text(
                 text = stringResource(
@@ -83,20 +86,33 @@ fun ShoppingListScreen (
                 textAlign = TextAlign.Center,
                 color = Color.DarkGray
             )
-        } else {
-            Column {
+        }
+        else {
+            Column(verticalArrangement = Arrangement.Top, modifier = Modifier.fillMaxSize()) {
                 ShoppingListActionsBar(
                     showFilterParams = uiState.showFilterParams,
                     onClickDeleteAll = { shoppingListViewModel.showClearAllConfirmationDialog() },
-                    onClickFilter = { shoppingListViewModel.showFilterDialog() },
+                    onClickFilter = { shoppingListViewModel.toggleShowFilterDialog() },
                     filterParams = uiState.filterParams,
-                    onChangeFilter = { shoppingListViewModel.updateFilter(it) }
+                    onChangeFilter = { shoppingListViewModel.updateFilter(it) },
+                    itemsList = uiState.shoppingList
                 )
-                ShoppingList(
-                    itemsList = uiState.shoppingList,
-                    shoppingListViewModel = shoppingListViewModel,
-                    setItemToBeEdited = { editItemViewModel.setItemBeingEdited(it) }
-                )
+                if(displayedItems.isNotEmpty()) {
+                    ShoppingList(
+                        itemsList = displayedItems,
+                        shoppingListViewModel = shoppingListViewModel,
+                        setItemToBeEdited = { editItemViewModel.setItemBeingEdited(it) }
+                    )
+                }
+                else {
+                    Text(
+                        text = stringResource(
+                            R.string.no_item_matches_filter
+                        ),
+                        textAlign = TextAlign.Center,
+                        color = Color.DarkGray
+                    )
+                }
             }
         }
     }
@@ -151,44 +167,101 @@ fun ShoppingListScreen (
     }
 }
 
+fun applyFilters(filterParams: ShoppingListFilter, shoppingList: List<ShoppingListItem>): List<ShoppingListItem> {
+    return shoppingList
+        .filter {
+            // show bulk only
+            (if (filterParams.bulk) it.bulk else true)
+                    &&
+                    // hide already bought
+                    (if (filterParams.hideAlreadyInCart) !(it.isInCart) else true)
+                    &&
+                    // category match
+                    (it.category.isEmpty() || filterParams.category.isEmpty() ||
+                            it.category.trim() == filterParams.category.trim())
+                    &&
+                    // shop name match
+                    (it.shop.isEmpty() || filterParams.shop.isEmpty() ||
+                            it.shop.trim() == filterParams.shop.trim())
+        }
+        .sortedBy { "${when(filterParams.sortOrder) {
+            ShoppingListFilter.SortOrder.NAME -> it.name
+            ShoppingListFilter.SortOrder.DATE -> it.dateCreated
+            else -> 1
+        }}" }
+        .sortedBy { if (filterParams.urgent) !(it.urgent && !it.isInCart) else true }
+
+}
+
 @Composable
-fun FilterParametersBox(filterParams: ShoppingListFilter?,
-                        onChangeFilter: (ShoppingListFilter)->Unit,
-                        modifier : Modifier = Modifier) {
+fun FilterParametersBox(
+    filterParams: ShoppingListFilter,
+    onChangeFilter: (ShoppingListFilter) -> Unit,
+    modifier: Modifier = Modifier,
+    itemsList: List<ShoppingListItem>
+) {
+    val shopsList = mutableSetOf<String>()
+    for(item in itemsList) shopsList.add(item.shop.trim())
+
+    val categoriesList = mutableSetOf<String>()
+    for(item in itemsList) categoriesList.add(item.category.trim())
+
+    var shopDropdownExpanded by rememberSaveable { mutableStateOf(false) }
+    var categoryDropdownExpanded by rememberSaveable { mutableStateOf(false) }
+
     Box(modifier = modifier) {
         Column(Modifier.fillMaxWidth()) {
-
-            // ONLY REMAINING?
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-            ) {
-                Checkbox(
-                    checked = !(filterParams?.onlyRemaining ?: false),
-                    onCheckedChange = {}// onChangeFilter(filterParams.setBulk(it)) }
-                )
-                Text(text = stringResource(R.string.show_already_bought))
-            }
-
+            // CATEGORY
+            OptionsDropdownMenu(
+                title = stringResource(R.string.category),
+                options = categoriesList.toList(),
+                currentOptionName = filterParams.category,
+                onChooseOption = { onChangeFilter(filterParams.toBuilder().setCategory(it).build()) },
+                expanded = categoryDropdownExpanded,
+                onToggleExpanded = { categoryDropdownExpanded = !categoryDropdownExpanded },
+                //modifier = TODO()
+            )
+            // SHOP
+            OptionsDropdownMenu(
+                title = stringResource(R.string.shop),
+                options = shopsList.toList(),
+                currentOptionName = filterParams.shop,
+                onChooseOption = { onChangeFilter(filterParams.toBuilder().setShop(it).build()) },
+                expanded = shopDropdownExpanded,
+                onToggleExpanded = { shopDropdownExpanded = !shopDropdownExpanded },
+                //modifier = TODO()
+            )
             // BULK?
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-            ) {
-                Checkbox(
-                    checked = filterParams?.bulk ?: false,
-                    onCheckedChange = { } ) //onChangeFilter(filterParams.setBulk(it)) })
-                Text(text = stringResource(R.string.bulk))
-            }
+            FilterCheckBox(
+                checked = filterParams.bulk,
+                onCheckedChangeFilter = { onChangeFilter(filterParams.toBuilder()
+                    .setBulk(it).build()) },
+                textId = R.string.bulk_only
+            )
+            // URGENT?
+            FilterCheckBox(
+                checked = filterParams.urgent,
+                onCheckedChangeFilter = { onChangeFilter(filterParams.toBuilder()
+                    .setUrgent(it).build()) },
+                textId = R.string.urgent_on_top
+            )
+            // HIDE ITEMS IN CART?
+            FilterCheckBox(
+                checked = filterParams.hideAlreadyInCart,
+                onCheckedChangeFilter = { onChangeFilter(filterParams.toBuilder()
+                    .setHideAlreadyInCart(it).build()) },
+                textId = R.string.hide_already_bought
+            )
         }
     }
 
 //    message ShoppingListFilter {
-//        bool onlyRemaining = 1;
+//        bool hideAlreadyInCart = 1;
+//        bool bulk = 5;
+//        bool urgent = 4;
+
 //        string category = 2;
 //        string shop = 3;
-//        bool urgent = 4;
-//        bool bulk = 5;
 //
 //        enum SortOrder {
 //            NONE = 0;
@@ -200,10 +273,24 @@ fun FilterParametersBox(filterParams: ShoppingListFilter?,
 }
 
 @Composable
+fun FilterCheckBox(checked: Boolean, onCheckedChangeFilter: (Boolean) -> Unit, textId: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = { onCheckedChangeFilter(it) }
+        )
+        Text(text = stringResource(textId))
+    }
+}
+
+@Composable
 private fun ShoppingList(
     itemsList: List<ShoppingListItem>,
     shoppingListViewModel: ShoppingListViewModel,
-    setItemToBeEdited:(ShoppingListItem)->Unit
+    setItemToBeEdited: (ShoppingListItem) -> Unit,
 ) {
     var expandedItemTimestamp by rememberSaveable { mutableLongStateOf(0L) }
 
@@ -211,7 +298,10 @@ private fun ShoppingList(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .clickable { expandedItemTimestamp = 0L }
+            .clickable {
+                expandedItemTimestamp = 0L
+                shoppingListViewModel.showFilterDialog(false)
+            }
     ) {
         itemsList.forEach { item ->
             key(item.name + item.dateCreated) {
@@ -246,9 +336,11 @@ fun ShoppingListActionsBar(
     showFilterParams: Boolean,
     onClickDeleteAll: () -> Unit,
     onClickFilter: () -> Unit,
-    filterParams: ShoppingListFilter?,
-    onChangeFilter: (ShoppingListFilter)->Unit,
-    ) {
+    filterParams: ShoppingListFilter,
+    onChangeFilter: (ShoppingListFilter) -> Unit,
+    itemsList: List<ShoppingListItem>
+) {
+    val numActiveFilters = filterParams.numberOfActiveFilters()
 
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -264,21 +356,49 @@ fun ShoppingListActionsBar(
 
         ) {
             Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.clickable { onClickFilter() }
             ) {
-                val color = if(showFilterParams) Color.Black else Color.Gray
-                Icon(
-                    Icons.Filled.Menu,
-                    stringResource(R.string.filter_options),
-                    tint = color
-                )
+                val color = if (showFilterParams) {
+                    Color.Black
+                } else {
+                    if(numActiveFilters>0)
+                        Color.DarkGray
+                    else
+                        Color.Gray
+                }
+
+                Box(contentAlignment = Alignment.TopEnd) {
+                    Icon(
+                        Icons.Filled.Menu,
+                        stringResource(R.string.filter_options),
+                        tint = color
+                    )
+                    if(numActiveFilters>0) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(12.dp).clip(CircleShape)
+                                .background(color)
+                        ) {
+                            Text(
+                                text = "$numActiveFilters",
+                                color = Color.LightGray,
+                                fontSize = 10.sp,
+                                lineHeight = 12.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = stringResource(R.string.filter),
-                    fontWeight = if(showFilterParams) FontWeight.SemiBold else FontWeight.Normal,
-                    color = color)
+                    fontWeight = if (showFilterParams) FontWeight.SemiBold else FontWeight.Normal,
+                    color = color
+                )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.clickable { onClickDeleteAll() }
             ) {
                 Icon(
@@ -291,11 +411,24 @@ fun ShoppingListActionsBar(
         }
         if(showFilterParams) {
             FilterParametersBox(
+                itemsList = itemsList,
                 filterParams = filterParams,
                 onChangeFilter = onChangeFilter,
                 modifier = Modifier.fillMaxWidth().padding(16.dp))
         }
     }
+}
+
+fun ShoppingListFilter.numberOfActiveFilters() : Int {
+    var n = 0
+    if(bulk) n++
+    if(urgent) n++
+    if(hideAlreadyInCart) n++
+    if(this.category.isNotEmpty()) n++
+    if(this.shop.isNotEmpty()) n++
+    if(this.sortOrder!=ShoppingListFilter.SortOrder.NONE &&
+        this.sortOrder!=ShoppingListFilter.SortOrder.UNRECOGNIZED ) n++
+    return n
 }
 
 @Composable

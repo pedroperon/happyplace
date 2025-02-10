@@ -60,5 +60,8 @@
     <string name="you_have_some_tasks_today">You have some tasks today:</string>
     <string name="this_item">this item</string>
     <string name="shopping_list_is_empty_tap_to_start">Your shopping list is empty.\nTap \"%1$s\" to start</string>
-    <string name="show_already_bought">Show items already bought</string>
+    <string name="hide_already_bought">Hide items already in cart</string>
+    <string name="bulk_only">Bulk only</string>
+    <string name="urgent_on_top">Urgent items on top</string>
+    <string name="no_item_matches_filter">No item on your list matches your filter definitions.\nChange your filter parameters or add new items.</string>
 </resources>
