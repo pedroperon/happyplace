@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -170,6 +171,7 @@ fun EditItemInShoppingListDialog(
                 OptionsDropdownMenu(
                     title = stringResource(R.string.category),
                     options = categories,
+                    allowInput = true,
                     onChooseOption = { viewModel.categoryChosen(it) },
                     currentOptionName = editItemUiState.itemBeingEdited.category,
                     expanded = editItemUiState.categoryDropDownExpanded,
@@ -180,6 +182,7 @@ fun EditItemInShoppingListDialog(
                 OptionsDropdownMenu(
                     title = stringResource(R.string.shop),
                     options = shops,
+                    allowInput = true,
                     onChooseOption = { viewModel.shopChosen(it) },
                     currentOptionName = editItemUiState.itemBeingEdited.shop,
                     expanded = editItemUiState.shopDropDownExpanded,
@@ -218,9 +221,10 @@ fun OptionsDropdownMenu(
     title: String,
     options: List<String>,
     currentOptionName: String?,
-    onChooseOption: (String?)->Unit,
+    onChooseOption: (String)->Unit,
     expanded: Boolean,
     onToggleExpanded: (Boolean?)->Unit,
+    allowInput: Boolean = false,
     modifier: Modifier = Modifier
     ) {
     var newOptionName by rememberSaveable { mutableStateOf("") }
@@ -253,7 +257,7 @@ fun OptionsDropdownMenu(
                     Text(text = stringResource(R.string.none))
                 },
                 onClick = {
-                    onChooseOption(null)
+                    onChooseOption("")
                     dismiss()
                 }
             )
@@ -268,29 +272,32 @@ fun OptionsDropdownMenu(
                     }
                 )
             }
-            DropdownMenuItem(
-                onClick = {},
-                text = {
-                    TextField( // add new shop
-                        value = newOptionName,
-                        onValueChange = { newOptionName = it },
-                        //shape = RoundedCornerShape(8.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done,
-                            capitalization = KeyboardCapitalization.Words
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                onChooseOption(newOptionName)
-                                dismiss()
-                            }
-                        ),
-                        label = { Text(text = stringResource(R.string.create_new)) },
-                    )
-                }
-            )
+            if(allowInput) {
+                DropdownMenuItem(
+                    onClick = {},
+                    text = {
+                        TextField(
+                            // add new shop
+                            value = newOptionName,
+                            onValueChange = { newOptionName = it },
+                            //shape = RoundedCornerShape(8.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                                capitalization = KeyboardCapitalization.Words
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    onChooseOption(newOptionName)
+                                    dismiss()
+                                }
+                            ),
+                            label = { Text(text = stringResource(R.string.create_new)) },
+                        )
+                    }
+                )
+            }
         }
     }
 }
@@ -362,3 +369,16 @@ private val unitNameIds = mapOf(
     "GRAM" to arrayOf(R.string.gram, R.string.grams),
     "LITER" to arrayOf(R.string.liter, R.string.liters)
 )
+
+@Preview
+@Composable
+fun EditItemDialogPreview() {
+    EditItemInShoppingListDialog(
+        onDismissRequest = { },
+        onDone = {},
+        shops = listOf(),
+        categories = listOf(),
+        originalItem = null,
+        viewModel = EditItemViewModel()
+    )
+}

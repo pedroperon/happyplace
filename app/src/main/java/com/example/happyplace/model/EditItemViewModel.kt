@@ -108,23 +108,23 @@ class EditItemViewModel : ViewModel() {
         }
     }
 
-    fun shopChosen(shop: String?) {
+    fun shopChosen(shop: String) {
         _uiState.update { currentState ->
             currentState.copy(
                 itemBeingEdited = currentState.itemBeingEdited
                     .toBuilder()
-                    .setShop(shop?.trim() ?: "")
+                    .setShop(shop.trim())
                     .build()
             )
         }
     }
 
-    fun categoryChosen(category: String?) {
+    fun categoryChosen(category: String) {
         _uiState.update { currentState ->
             currentState.copy(
                 itemBeingEdited = currentState.itemBeingEdited
                     .toBuilder()
-                    .setCategory(category?.trim() ?: "")
+                    .setCategory(category.trim())
                     .build()
             )
         }

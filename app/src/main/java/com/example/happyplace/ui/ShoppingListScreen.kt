@@ -201,10 +201,10 @@ fun FilterParametersBox(
     itemsList: List<ShoppingListItem>
 ) {
     val shopsList = mutableSetOf<String>()
-    for(item in itemsList) shopsList.add(item.shop.trim())
+    for(item in itemsList) if(item.shop.isNotEmpty()) shopsList.add(item.shop.trim())
 
     val categoriesList = mutableSetOf<String>()
-    for(item in itemsList) categoriesList.add(item.category.trim())
+    for(item in itemsList) if(item.category.isNotEmpty()) categoriesList.add(item.category.trim())
 
     var shopDropdownExpanded by rememberSaveable { mutableStateOf(false) }
     var categoryDropdownExpanded by rememberSaveable { mutableStateOf(false) }
@@ -214,9 +214,9 @@ fun FilterParametersBox(
             // CATEGORY
             OptionsDropdownMenu(
                 title = stringResource(R.string.category),
-                options = categoriesList.toList(),
+                options = categoriesList.toList().sorted(),
                 currentOptionName = filterParams.category,
-                onChooseOption = { onChangeFilter(filterParams.toBuilder().setCategory(it).build()) },
+                onChooseOption = { onChangeFilter(filterParams.toBuilder().setCategory(it?:"").build()) },
                 expanded = categoryDropdownExpanded,
                 onToggleExpanded = { categoryDropdownExpanded = !categoryDropdownExpanded },
                 //modifier = TODO()
@@ -224,9 +224,9 @@ fun FilterParametersBox(
             // SHOP
             OptionsDropdownMenu(
                 title = stringResource(R.string.shop),
-                options = shopsList.toList(),
+                options = shopsList.toList().sorted(),
                 currentOptionName = filterParams.shop,
-                onChooseOption = { onChangeFilter(filterParams.toBuilder().setShop(it).build()) },
+                onChooseOption = { onChangeFilter(filterParams.toBuilder().setShop(it?:"").build()) },
                 expanded = shopDropdownExpanded,
                 onToggleExpanded = { shopDropdownExpanded = !shopDropdownExpanded },
                 //modifier = TODO()
