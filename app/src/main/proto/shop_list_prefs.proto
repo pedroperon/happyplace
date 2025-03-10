@@ -51,19 +51,19 @@ message LocalShoppingList {
 // Tasks
 message User {
   string name = 1;
+  uint32 id = 2;
 }
-message LocalUsersList {
-  repeated User users = 1;
-}
+//message LocalUsersList {
+//  repeated User users = 1;
+//}
 message Task {
+  string name = 1;
   enum TaskType {
     NONE = 0;
     CLEANING = 1;
     MAINTENANCE = 2;
     SHOPPING = 3;
   }
-
-  string name = 1;
   TaskType type = 2;
   int64 initialDate = 3;
   uint32 period = 4;
@@ -73,4 +73,5 @@ message Task {
 
 message LocalTasksList {
   repeated Task tasks = 1;
+  repeated User users = 2;
 }

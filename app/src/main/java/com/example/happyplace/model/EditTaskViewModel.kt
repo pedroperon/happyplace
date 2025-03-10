@@ -3,6 +3,7 @@ package com.example.happyplace.model
 import androidx.lifecycle.ViewModel
 import com.example.happyplace.ShoppingListItem
 import com.example.happyplace.Task
+import com.example.happyplace.User
 import com.example.happyplace.task
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +13,9 @@ import kotlinx.coroutines.flow.update
 private const val INVALID_DATE = -10000L
 
 data class EditTaskUiState(
-    val taskBeingEdited : Task
+    val taskBeingEdited : Task,
+    val userDropDownExpanded : Boolean = false,
+    val taskTypeDropDownExpanded : Boolean = false
 )
 
 class EditTaskViewModel : ViewModel() {
@@ -45,6 +48,25 @@ class EditTaskViewModel : ViewModel() {
                 taskBeingEdited = currentState.taskBeingEdited
                     .toBuilder()
                     .setDetails(newDetails)
+                    .build()
+            )
+        }
+    }
+
+    fun toggleUserSelectionExpanded(expanded: Boolean? = null) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                userDropDownExpanded = expanded ?: !currentState.userDropDownExpanded
+            )
+        }
+    }
+
+    fun updateOwner(user: User) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                taskBeingEdited = currentState.taskBeingEdited
+                    .toBuilder()
+                    .setTaskOwner(user)
                     .build()
             )
         }

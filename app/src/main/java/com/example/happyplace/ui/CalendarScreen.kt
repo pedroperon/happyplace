@@ -140,7 +140,8 @@ fun CalendarScreen(
                 tasksCalendarViewModel.saveTask(it)
                 askPermissionForNotifications()
                           },
-            editTaskViewModel = editTaskViewModel
+            editTaskViewModel = editTaskViewModel,
+            users = uiState.users
         )
     }
 }
@@ -287,10 +288,16 @@ fun TaskBox(task:Task, onClick:((Task)->Unit)={}, onDoubleClick:((Task)->Unit)={
         )
         Text(
             text = task.name,
-            //fontWeight = FontWeight.W400,
             color = color,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
+        if(task.taskOwner.name.isNotEmpty())
+            Text(
+                text = "(${task.taskOwner.name})",
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+
     }
 }
 

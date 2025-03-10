@@ -1,8 +1,10 @@
 package com.example.happyplace.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +21,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DisplayMode
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -34,8 +38,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -47,6 +53,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.happyplace.R
 import com.example.happyplace.Task
+import com.example.happyplace.User
 import com.example.happyplace.model.EditTaskViewModel
 import java.time.Instant
 import java.time.LocalDate
@@ -65,11 +72,12 @@ enum class ShowPickerState {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskPopupDialog(
-    onDismissRequest: ()->Unit,
-    onClickSave: (Task)->Unit,
+    onDismissRequest: () -> Unit,
+    onClickSave: (Task) -> Unit,
     editTaskViewModel: EditTaskViewModel,
-    initialEpochDay: Long? = null
-    ) {
+    initialEpochDay: Long? = null,
+    users: List<User>
+) {
     val editTaskUiState by editTaskViewModel.uiState.collectAsState()
     var showPicker by rememberSaveable { mutableStateOf(ShowPickerState.NONE) }
 
@@ -132,22 +140,65 @@ fun EditTaskPopupDialog(
                 // DATE
                 Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { showPicker = ShowPickerState.DATE }) {
-                    Icon(Icons.Filled.DateRange,null)
-                    Text(text = datePickedUTC.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)) +
-                        " (${datePickedUTC.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())})",
-                        modifier = Modifier.padding(8.dp))
+                    Icon(Icons.Filled.DateRange, null)
+                    Text(
+                        text = datePickedUTC.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)) +
+                                " (${
+                                    datePickedUTC.dayOfWeek.getDisplayName(
+                                        TextStyle.FULL,
+                                        Locale.getDefault()
+                                    )
+                                })",
+                        modifier = Modifier.padding(8.dp)
+                    )
                 }
 
                 // TIME
                 Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { showPicker = ShowPickerState.TIME }) {
-                    Icon(Icons.Filled.CheckCircle,null)
-                    Text(text = "%02d".format(timePickerState.hour)+":%02d".format(timePickerState.minute),
-                        modifier = Modifier.padding(8.dp))
+                    Icon(Icons.Filled.CheckCircle, null)
+                    Text(
+                        text = "%02d".format(timePickerState.hour) + ":%02d".format(timePickerState.minute),
+                        modifier = Modifier.padding(8.dp)
+                    )
                 }
 
-                // TODO: Task owner
-                // Drop down menu
+                val expanded = editTaskUiState.userDropDownExpanded
+                val dismiss = { editTaskViewModel.toggleUserSelectionExpanded(false) }
+                Box {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.clickable(onClick = { editTaskViewModel.toggleUserSelectionExpanded() })
+                    ) {
+                        val title = stringResource(R.string.task_owner)
+                        Text(text = title)
+                        val currentOptionName = editTaskUiState.taskBeingEdited.taskOwner.name
+                        Text(text = currentOptionName ?: "")
+                        Image(
+                            painter = painterResource(R.drawable.baseline_arrow_right_24),
+                            contentDescription = stringResource(R.string.expand_list),
+                            modifier = Modifier.rotate(if (expanded) 270F else 90F)
+                        )
+
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = dismiss
+                        ) {
+                            users.forEach {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = it.name)
+                                    },
+                                    onClick = {
+                                        editTaskViewModel.updateOwner(it)
+                                        dismiss()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     //DETAIL
@@ -176,19 +227,20 @@ fun EditTaskPopupDialog(
                         onClick = {
                             onClickSave(
                                 editTaskUiState.taskBeingEdited
-                                .toBuilder()
-                                .setInitialDate(
-                                    datePickedUTC.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                                    + (timePickerState.hour*60+timePickerState.minute)*60*1000 // hours and minutes in milliseconds
-                                )
-                                .build()
+                                    .toBuilder()
+                                    .setInitialDate(
+                                        datePickedUTC.atStartOfDay(ZoneId.systemDefault())
+                                            .toInstant().toEpochMilli()
+                                                + (timePickerState.hour * 60 + timePickerState.minute) * 60 * 1000 // hours and minutes in milliseconds
+                                    )
+                                    .build()
                             )
-
                             onDismissRequest()
                         },
                         enabled = (
                                 editTaskUiState.taskBeingEdited.name.isNotEmpty() &&
-                                datePickerState.selectedDateMillis!=null
+                                        editTaskUiState.taskBeingEdited.taskOwner.name.isNotEmpty() &&
+                                        datePickerState.selectedDateMillis != null
                                 )
                     ) {
                         Text(text = stringResource(R.string.done))

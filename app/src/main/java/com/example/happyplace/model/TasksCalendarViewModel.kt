@@ -7,6 +7,7 @@ import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.example.happyplace.LocalTasksList
 import com.example.happyplace.Task
+import com.example.happyplace.User
 import com.example.happyplace.data.TasksListRepository
 import com.example.happyplace.utils.startOfDayMillis
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,12 +17,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+fun getDefaultUsersList() : List<User> {
+    return listOf(
+        User.newBuilder().apply {
+            name = "Pedro"
+            id = 1001
+        }.build(),
+        User.newBuilder().apply {
+            name = "Caro"
+            id = 1002
+        }.build()
+    )
+}
+
 data class TasksCalendarUiState(
     val tasks : List<Task> = listOf(),
+    val users : List<User> = getDefaultUsersList(),
     val showEditTaskDialog : Boolean = false,
     val taskStagedForEdition : Task? = null,
     val expandedDay : Long? = LocalDate.now().toEpochDay()
-    //val popupDisplayState: PopupDisplayState
 )
 
 class TasksCalendarViewModel(
@@ -61,6 +75,7 @@ class TasksCalendarViewModel(
         _uiState.update {
             it.copy(
                 tasks = retrievedTasksList.tasksList,
+                users = getDefaultUsersList() //retrievedTasksList.usersList
             )
         }
     }

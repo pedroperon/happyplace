@@ -64,4 +64,6 @@
     <string name="bulk_only">Bulk only</string>
     <string name="urgent_on_top">Urgent items on top</string>
     <string name="no_item_matches_filter">No item on your list matches your filter definitions.\nChange your filter parameters or add new items.</string>
+    <string name="all">All</string>
+    <string name="task_owner">Task owner:</string>
 </resources>

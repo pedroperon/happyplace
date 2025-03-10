@@ -254,7 +254,7 @@ fun OptionsDropdownMenu(
         ) {
             DropdownMenuItem(
                 text = {
-                    Text(text = stringResource(R.string.none))
+                    Text(text = stringResource(if(allowInput) R.string.none else R.string.all))
                 },
                 onClick = {
                     onChooseOption("")
