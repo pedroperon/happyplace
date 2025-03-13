@@ -55,6 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.happyplace.Periodicity.IntervalType
 import com.example.happyplace.R
 import com.example.happyplace.Task
 import com.example.happyplace.Task.TaskType
@@ -231,24 +232,56 @@ fun EditTaskPopupDialog(
                                 ),
                                 modifier = Modifier.width(60.dp)
                             )
-                            Text(text = " days")
+
+                            //PERIOD DROP DOWN MENU
+                            Box(Modifier.padding(start = 4.dp)) {
+                                var expanded by rememberSaveable { mutableStateOf(false) }
+                                val dismiss = { expanded = false }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    //horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.clickable(onClick = { expanded = !expanded })
+                                ) {
+                                    Text(
+                                        text = editTaskUiState.taskBeingEdited.periodicity?.intervalType?.name?.lowercase() ?: ""
+                                    )
+                                    Image(
+                                        painter = painterResource(R.drawable.baseline_arrow_right_24),
+                                        contentDescription = stringResource(R.string.expand_list),
+                                        modifier = Modifier.rotate(if (expanded) 270F else 90F)
+                                    )
+
+                                    DropdownMenu(
+                                        expanded = expanded,
+                                        onDismissRequest = dismiss
+                                    ) {
+                                        IntervalType.entries.forEach {
+                                            DropdownMenuItem(
+                                                text = { Text(text=it.name.lowercase()) },
+                                                onClick = {
+                                                    editTaskViewModel.updatePeriodicityIntervalType(it)
+                                                    dismiss()
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
                 // TASK OWNER
-                val expanded = editTaskUiState.userDropDownExpanded
-                val dismiss = { editTaskViewModel.toggleUserSelectionExpanded(false) }
                 Box {
+                    val expanded = editTaskUiState.userDropDownExpanded
+                    val dismiss = { editTaskViewModel.toggleUserSelectionExpanded(false) }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable(onClick = { editTaskViewModel.toggleUserSelectionExpanded() })
                     ) {
-                        val title = stringResource(R.string.task_owner)
-                        Text(text = title)
-                        val currentOptionName = editTaskUiState.taskBeingEdited.taskOwner.name
-                        Text(text = currentOptionName ?: "")
+                        Text(text = stringResource(R.string.task_owner))
+                        Text(text = editTaskUiState.taskBeingEdited.taskOwner.name ?: "")
                         Image(
                             painter = painterResource(R.drawable.baseline_arrow_right_24),
                             contentDescription = stringResource(R.string.expand_list),
