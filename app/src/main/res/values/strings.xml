@@ -66,4 +66,9 @@
     <string name="no_item_matches_filter">No item on your list matches your filter definitions.\nChange your filter parameters or add new items.</string>
     <string name="all">All</string>
     <string name="task_owner">Task owner:</string>
+    <string name="type">Type:</string>
+    <string name="maintenance">Maintenance</string>
+    <string name="shopping">Shopping</string>
+    <string name="cooking">Cooking</string>
+    <string name="undefined">Undefined</string>
 </resources>

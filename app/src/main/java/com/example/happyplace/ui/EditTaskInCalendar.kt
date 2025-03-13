@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.DropdownMenu
@@ -27,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -48,11 +51,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.happyplace.R
 import com.example.happyplace.Task
+import com.example.happyplace.Task.TaskType
 import com.example.happyplace.User
 import com.example.happyplace.model.EditTaskViewModel
 import java.time.Instant
@@ -116,8 +121,8 @@ fun EditTaskPopupDialog(
                         .padding(8.dp)
                 )
 
+                //NAME
                 OutlinedTextField(
-                    //NAME
                     value = editTaskUiState.taskBeingEdited.name,
                     onValueChange = { editTaskViewModel.updateName(it) },
                     enabled = true,
@@ -136,6 +141,47 @@ fun EditTaskPopupDialog(
                                 editTaskViewModel.updateName(editTaskUiState.taskBeingEdited.name.trim())
                         }
                 )
+
+                // TASK TYPE
+                val expandTypeDD = editTaskUiState.taskTypeDropDownExpanded
+                val dismissTypeDD = { editTaskViewModel.toggleTypeSelectionExpanded(false) }
+
+                Box {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.clickable(onClick = { editTaskViewModel.toggleTypeSelectionExpanded() })
+                    ) {
+                        val title = stringResource(R.string.type)
+                        Text(text = title)
+                        val currentOptionName = getTaskTypeName(editTaskUiState.taskBeingEdited.type)
+                        Text(text = currentOptionName)
+                        Image(
+                            painter = painterResource(R.drawable.baseline_arrow_right_24),
+                            contentDescription = stringResource(R.string.expand_list),
+                            modifier = Modifier.rotate(if (expandTypeDD) 270F else 90F)
+                        )
+
+                        DropdownMenu(
+                            expanded = expandTypeDD,
+                            onDismissRequest = dismissTypeDD
+                        ) {
+                            TaskType.entries
+                                .subList(0, TaskType.entries.size - 1) // excludes automatically generated UNRECOGNIZED
+                                .forEach {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = getTaskTypeName(it))
+                                    },
+                                    onClick = {
+                                        editTaskViewModel.updateType(it)
+                                        dismissTypeDD()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 // DATE
                 Row(verticalAlignment = Alignment.CenterVertically,
@@ -163,6 +209,34 @@ fun EditTaskPopupDialog(
                     )
                 }
 
+                // RECURRENT
+                Column {
+                    var checkedAsRecurrent by rememberSaveable { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = checkedAsRecurrent,
+                            onCheckedChange = {
+                                editTaskViewModel.resetPeriodicity()
+                                checkedAsRecurrent = !checkedAsRecurrent
+                            })
+                        Text(text = "Repeats")
+                        if (checkedAsRecurrent) {
+                            Text(text = " every ")
+                            TextField(
+                                value = toStringEmptyIfZero(editTaskUiState.taskBeingEdited.periodicity.numberOfIntervals),
+                                onValueChange = { editTaskViewModel.updatePeriodicityNumber(it) },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    //imeAction = ImeAction.Next,
+                                ),
+                                modifier = Modifier.width(60.dp)
+                            )
+                            Text(text = " days")
+                        }
+                    }
+                }
+
+                // TASK OWNER
                 val expanded = editTaskUiState.userDropDownExpanded
                 val dismiss = { editTaskViewModel.toggleUserSelectionExpanded(false) }
                 Box {
@@ -200,8 +274,8 @@ fun EditTaskPopupDialog(
                     }
                 }
 
+                //DETAIL
                 OutlinedTextField(
-                    //DETAIL
                     value = editTaskUiState.taskBeingEdited.details,
                     onValueChange = { editTaskViewModel.updateDetails(it) },
                     enabled = true,
@@ -282,10 +356,41 @@ private fun PickerPopup(
     ) {
         Card(shape = RoundedCornerShape(16.dp)) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.End,
             ) {
                 content()
+
+                Button(onClick = onDismissPicker, modifier = Modifier.padding(12.dp)) {
+                    Text(text = stringResource(R.string.done))
+                }
+
             }
         }
     }
+}
+
+@Composable
+fun getTaskTypeName(type:TaskType): String {
+    return (taskTypeNameIds[type.name]
+        ?.let { id -> stringResource(id) }
+        ?: type.name.lowercase())
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+}
+private val taskTypeNameIds = mapOf(
+    "UNDEFINED" to R.string.undefined,
+    "CLEANING" to R.string.cleaning,
+    "MAINTENANCE" to R.string.maintenance,
+    "SHOPPING" to R.string.shopping,
+    "COOKING" to R.string.cooking
+)
+
+@Preview
+@Composable
+fun EditTaskPopupDialogPreview() {
+    EditTaskPopupDialog(
+        onDismissRequest = {},
+        onClickSave = {},
+        editTaskViewModel = EditTaskViewModel(),
+        users = emptyList()
+    )
 }

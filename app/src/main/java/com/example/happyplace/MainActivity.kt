@@ -106,10 +106,6 @@ class MainActivity : ComponentActivity() {
         super.onPause()
     }
 
-    override fun onStop() {
-        super.onStop()
-    }
-
     private fun scheduleTaskNotifications() {
         // Create an explicit intent for an Activity in your app.
         val intent = Intent(this, MainActivity::class.java)
@@ -121,7 +117,6 @@ class MainActivity : ComponentActivity() {
         taskReminderNotificationsHandler.scheduleTasksNotifications(
             tasksCalendarViewModel.getTasksForNextDays(7),
             pendingIntent)
-
     }
 
     private fun observeShoppingListChanges() {

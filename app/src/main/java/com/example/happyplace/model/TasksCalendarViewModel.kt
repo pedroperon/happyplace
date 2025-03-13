@@ -93,7 +93,7 @@ class TasksCalendarViewModel(
 
     fun saveTask(task: Task) {
         viewModelScope.launch {
-                tasksListRepository.saveTask(task)
+                tasksListRepository.saveNewTask(task)
         }
     }
 

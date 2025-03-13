@@ -53,22 +53,35 @@ message User {
   string name = 1;
   uint32 id = 2;
 }
-//message LocalUsersList {
-//  repeated User users = 1;
-//}
+
+message Periodicity {
+  enum IntervalType {
+    DAY = 0;
+    WEEK = 1;
+    MONTH = 2;
+    YEAR = 3;
+  }
+  uint32 numberOfIntervals = 1;
+  IntervalType intervalType = 2;
+}
+
 message Task {
   string name = 1;
   enum TaskType {
-    NONE = 0;
+    UNDEFINED = 0;
     CLEANING = 1;
     MAINTENANCE = 2;
     SHOPPING = 3;
+    COOKING = 4;
   }
   TaskType type = 2;
   int64 initialDate = 3;
-  uint32 period = 4;
+  Periodicity periodicity = 4;
   User taskOwner = 5;
   string details = 6;
+  int32 duration = 7;
+  string id = 8;
+  bool completed = 9;
 }
 
 message LocalTasksList {

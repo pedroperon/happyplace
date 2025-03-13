@@ -1,10 +1,11 @@
 package com.example.happyplace.model
 
 import androidx.lifecycle.ViewModel
-import com.example.happyplace.ShoppingListItem
+import com.example.happyplace.Periodicity
+import com.example.happyplace.Periodicity.IntervalType
 import com.example.happyplace.Task
+import com.example.happyplace.Task.TaskType
 import com.example.happyplace.User
-import com.example.happyplace.task
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,25 @@ class EditTaskViewModel : ViewModel() {
         }
     }
 
+    fun toggleTypeSelectionExpanded(expanded: Boolean? = null) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                taskTypeDropDownExpanded = expanded ?: !currentState.taskTypeDropDownExpanded
+            )
+        }
+    }
+
+    fun updateType(type: TaskType) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                taskBeingEdited = currentState.taskBeingEdited
+                    .toBuilder()
+                    .setType(type)
+                    .build()
+            )
+        }
+    }
+
     fun toggleUserSelectionExpanded(expanded: Boolean? = null) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -67,6 +87,64 @@ class EditTaskViewModel : ViewModel() {
                 taskBeingEdited = currentState.taskBeingEdited
                     .toBuilder()
                     .setTaskOwner(user)
+                    .build()
+            )
+        }
+    }
+
+    fun updatePeriodicityIntervalType(newIntervalType : IntervalType) {
+        if(newIntervalType == IntervalType.UNRECOGNIZED)
+            return
+
+        _uiState.update { currentState ->
+            val currentNumberIntervals = currentState.taskBeingEdited.periodicity?.numberOfIntervals ?: 0
+
+            currentState.copy(
+                taskBeingEdited = currentState.taskBeingEdited
+                    .toBuilder().apply {
+                        periodicity = Periodicity.newBuilder()
+                            .setIntervalType(newIntervalType)
+                            .setNumberOfIntervals(currentNumberIntervals)
+                            .build()
+                }
+                    .build()
+            )
+        }
+    }
+
+    fun updatePeriodicityNumber(newNumber: String) {
+        if ((newNumber.isNotEmpty() && newNumber.toIntOrNull()==null) //NaN
+            || newNumber.length > 2
+        )
+            return
+
+        // newNumber either empty or non negative int
+        _uiState.update { currentState ->
+            val currentIntervalType = currentState.taskBeingEdited.periodicity?.intervalType
+                ?: IntervalType.DAY
+
+            currentState.copy(
+                taskBeingEdited = currentState.taskBeingEdited
+                    .toBuilder().apply {
+                        periodicity = Periodicity.newBuilder()
+                            .setNumberOfIntervals(newNumber.ifEmpty{"0"}.toInt())
+                            .setIntervalType(currentIntervalType)
+                            .build()
+                    }
+                    .build()
+            )
+        }
+    }
+
+    fun resetPeriodicity() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                taskBeingEdited = currentState.taskBeingEdited.toBuilder().apply {
+                    periodicity = Periodicity.newBuilder()
+                        .setNumberOfIntervals(0)
+                        .setIntervalTypeValue(0)
+                        .build()
+                }
                     .build()
             )
         }
