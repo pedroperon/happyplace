@@ -67,4 +67,5 @@
     <string name="shopping">Courses</string>
     <string name="cooking">Cuisine</string>
     <string name="undefined">Non défini</string>
+    <string name="edit_task">Modifier tâche</string>
 </resources>

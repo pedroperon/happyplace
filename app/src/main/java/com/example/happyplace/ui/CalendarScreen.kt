@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +23,18 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +52,7 @@ import com.example.happyplace.model.EditTaskViewModel
 import com.example.happyplace.model.TasksCalendarViewModel
 import com.example.happyplace.utils.containsDateTimeInMillis
 import com.example.happyplace.utils.firstSundayAfterCurrentMonth
+import com.example.happyplace.utils.isRecurrent
 import com.example.happyplace.utils.lastMondayBeforeCurrentMonth
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -121,8 +127,12 @@ fun CalendarScreen(
                                      },
                         expandedDay = uiState.expandedDay,
                         tasksInMonth = tasks,
-                        onClickTask = {tasksCalendarViewModel.deleteTask(it)},
-                    modifier = Modifier.fillMaxWidth()
+                        onClickTask = {tasksCalendarViewModel.showTaskDetails(it)},
+                        onEditTask = {
+                            editTaskViewModel.setTaskBeingEdited(it)
+                            tasksCalendarViewModel.openEditTaskDialog(it)
+                                     },
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -131,6 +141,7 @@ fun CalendarScreen(
 
     if(uiState.showEditTaskDialog) {
         EditTaskPopupDialog(
+            isNewTask = (uiState.taskStagedForEdition==null),
             initialEpochDay = uiState.expandedDay,
             onDismissRequest = {
                 tasksCalendarViewModel.closeEditTaskDialog()
@@ -156,8 +167,9 @@ fun MonthBox(
     onClickDay: (Long?) -> Unit,
     expandedDay: Long?,
     tasksInMonth: List<Task>,
-    onClickTask:(Task)->Unit,
-    modifier: Modifier = Modifier
+    onClickTask: (Task) -> Unit,
+    onEditTask: (Task) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val today = LocalDate.now()
     val firstDayOfMonth = today.withDayOfMonth(1).plusMonths(monthOffset.toLong())
@@ -185,7 +197,8 @@ fun MonthBox(
                     firstDayOfMonth = firstDayOfMonth,
                     today = today,
                     tasksInMonth = tasksInMonth,
-                    onClickTask = onClickTask
+                    onClickTask = onClickTask,
+                    onEditTask = onEditTask
                 )
             }
         }
@@ -200,7 +213,8 @@ private fun WeekBox(
     firstDayOfMonth: LocalDate?,
     today: LocalDate?,
     tasksInMonth: List<Task>,
-    onClickTask:(Task)->Unit
+    onClickTask: (Task) -> Unit,
+    onEditTask: (Task) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row {
@@ -221,16 +235,20 @@ private fun WeekBox(
             epochDay = expandedDay,
             weekStart = startDay,
             tasks = tasksInMonth,
-            onClickTask = onClickTask
+            onClickTask = onClickTask,
+            onEditTask = onEditTask
         )
     }
 }
 
 @Composable
-fun DayTasksBox(epochDay: Long?,
-                weekStart: LocalDate,
-                tasks: List<Task>,
-                onClickTask: (Task)->Unit) {
+fun DayTasksBox(
+    epochDay: Long?,
+    weekStart: LocalDate,
+    tasks: List<Task>,
+    onClickTask: (Task) -> Unit,
+    onEditTask: (Task) -> Unit
+) {
 
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -259,8 +277,14 @@ fun DayTasksBox(epochDay: Long?,
                         fontWeight = FontWeight.SemiBold
                     )
                     Column(modifier = Modifier.verticalScroll(rememberScrollState(0))) {
-                        for (task in dayTasks) {
-                            TaskBox(task, onDoubleClick = onClickTask)
+                        dayTasks.forEach {
+                            key(it.name + it.initialDate) {
+                                TaskBox(
+                                    task = it,
+                                    onClick = onClickTask,
+                                    onEdit = onEditTask
+                                )
+                            }
                         }
                     }
                 }
@@ -268,36 +292,69 @@ fun DayTasksBox(epochDay: Long?,
         }
     }
 }
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TaskBox(task:Task, onClick:((Task)->Unit)={}, onDoubleClick:((Task)->Unit)={}) {
-    Row(verticalAlignment = Alignment.CenterVertically,
+fun TaskBox(task: Task,
+            onClick: (Task) -> Unit = {},
+            onEdit: (Task) -> Unit = {}) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Row(verticalAlignment = Alignment.Top,
         modifier = Modifier
-            //.clickable { onClick(task) }
-            .combinedClickable(onDoubleClick = { onDoubleClick(task) }) { onClick(task) }
+            .clickable {
+                expanded = !expanded
+                onClick(task)
+            }
+            .background(color = if (expanded) Color(0x15000000) else Color.Transparent)
             .padding(vertical = 8.dp)
             .fillMaxWidth()
+            .animateContentSize()
     ) {
         val color = Color.DarkGray //TODO: make this dependent on task type
-        val dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(task.initialDate), ZoneId.systemDefault())
+        val dateTime =
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(task.initialDate), ZoneId.systemDefault())
 
         Icon(painterResource(R.drawable.baseline_arrow_right_24), null, tint = color)
         Text(
             text = dateTime.format(DateTimeFormatter.ofPattern("HH:mm")),
             modifier = Modifier.padding(horizontal = 4.dp)
         )
-        Text(
-            text = task.name,
-            color = color,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
-        if(task.taskOwner.name.isNotEmpty())
-            Text(
-                text = "(${task.taskOwner.name})",
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 4.dp)
+        Column(Modifier.padding(horizontal = 4.dp)) {
+            Row {
+                Text(
+                    text = task.name,
+                    color = color
+                )
+                if (task.taskOwner.name.isNotEmpty())
+                    Text(
+                        text = "(${task.taskOwner.name})",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+            }
+            if (expanded) {
+                // task type
+                if (task.type != Task.TaskType.UNRECOGNIZED && task.type != Task.TaskType.UNDEFINED)
+                    Text(text = task.type.name.lowercase())
+                // recurrent?
+                if (task.isRecurrent()) {
+                    Text(text = "Repeats every ${task.periodicity.numberOfIntervals} ${task.periodicity.intervalType.name.lowercase()}")
+                }
+                // details
+                if (task.details.isNotEmpty())
+                    Text(text = task.details)
+            }
+        }
+        if (expanded) {
+            Spacer(Modifier.weight(1F))
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.edit),
+                tint = Color.Gray,
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .clickable { onEdit(task) }
             )
-
+        }
     }
 }
 

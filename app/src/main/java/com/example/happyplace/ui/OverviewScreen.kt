@@ -16,7 +16,6 @@ import com.example.happyplace.model.TasksCalendarViewModel
 import com.example.happyplace.utils.containsDateTimeInMillis
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -63,6 +62,7 @@ fun OverviewScreen(
                     TaskBox(task = task, onClick = {
                         onCallCalendarScreen()
                         tasksCalendarViewModel.toggleShowDay(
+//                            Instant.ofEpochMilli(it.initialDate).atZone(ZoneId.systemDefault()).
                             LocalDate.ofInstant(Instant.ofEpochMilli(it.initialDate), ZoneId.systemDefault()).toEpochDay(),
                             allowUnselect = false
                         )

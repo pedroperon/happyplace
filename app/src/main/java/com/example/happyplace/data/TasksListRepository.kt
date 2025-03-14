@@ -6,6 +6,7 @@ import com.example.happyplace.LocalTasksList
 import com.example.happyplace.Periodicity
 import com.example.happyplace.Task
 import com.example.happyplace.copy
+import com.example.happyplace.utils.isRecurrent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -31,30 +32,39 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
 
     suspend fun fetchInitialTasksList() = tasksListStore.data.first()
 
-    suspend fun saveNewTask(task: Task) {
+    suspend fun saveNewTask(newTask: Task, overOldTask: Task? = null) {
         tasksListStore.updateData { tasksList ->
-            if(task.id == "")
-                task.toBuilder()
-                    .setId("${task.initialDate}_${System.currentTimeMillis()}")
+
+            val indexOld = tasksList.tasksList.indexOf(overOldTask)
+
+            if(newTask.id == "")
+                newTask.toBuilder()
+                    .setId("${newTask.initialDate}_${System.currentTimeMillis()}")
                     .build()
             
             tasksList
                 .toBuilder()
-                .addAllTasks(createAllRepetitionsForTask(task))
+                .removeTasks(indexOld)
+                .addAllTasks(createAllRepetitionsForTask(newTask))
                 .build()
         }
     }
 
     private fun createAllRepetitionsForTask(task: Task): MutableIterable<Task> {
         val tasks = mutableListOf(task)
-        if(task.hasPeriodicity() && task.periodicity!=null && task.periodicity.numberOfIntervals>0) {
-            var nextDate =
+        if(task.isRecurrent()) {
+            val initialZonedDateTime =
                 ZonedDateTime.ofInstant(Instant.ofEpochMilli(task.initialDate), ZoneId.systemDefault())
+            var iteration = 1
             do {
-                nextDate = nextDate.addPeriod(task.periodicity)
-                tasks.add(task.copy { initialDate = nextDate.toInstant().toEpochMilli() })
+                val currentZonedDateTime = initialZonedDateTime.addPeriods(
+                    periodicity = task.periodicity,
+                    numberOfPeriods = iteration
+                )
+                tasks.add(task.copy { initialDate = currentZonedDateTime!!.toInstant().toEpochMilli() })
+                iteration++
             }
-            while(nextDate.year < 2100)
+            while(currentZonedDateTime!!.year < 2100)
         }
         return tasks
     }
@@ -82,15 +92,23 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
                 .build()
         }
     }
+
+    suspend fun deleteAllTasks() {
+        tasksListStore.updateData { localTasksList ->
+            localTasksList.toBuilder()
+                .clearTasks()
+                .build()
+        }
+    }
 }
 
-private fun ZonedDateTime.addPeriod(periodicity: Periodicity): ZonedDateTime? {
+private fun ZonedDateTime.addPeriods(periodicity: Periodicity, numberOfPeriods: Int): ZonedDateTime? {
     val n = periodicity.numberOfIntervals.toLong()
     return when(periodicity.intervalType) {
-        Periodicity.IntervalType.DAY -> this.plusDays(n)
-        Periodicity.IntervalType.WEEK -> this.plusWeeks(n)
-        Periodicity.IntervalType.MONTH -> this.plusMonths(n)
-        Periodicity.IntervalType.YEAR -> this.plusYears(n)
+        Periodicity.IntervalType.DAY -> this.plusDays(n*numberOfPeriods)
+        Periodicity.IntervalType.WEEK -> this.plusWeeks(n*numberOfPeriods)
+        Periodicity.IntervalType.MONTH -> this.plusMonths(n*numberOfPeriods)
+        Periodicity.IntervalType.YEAR -> this.plusYears(n*numberOfPeriods)
         else -> this
     }
 }

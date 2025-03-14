@@ -61,9 +61,12 @@ import com.example.happyplace.Task
 import com.example.happyplace.Task.TaskType
 import com.example.happyplace.User
 import com.example.happyplace.model.EditTaskViewModel
+import com.example.happyplace.utils.isRecurrent
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -78,6 +81,7 @@ enum class ShowPickerState {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskPopupDialog(
+    isNewTask: Boolean = false,
     onDismissRequest: () -> Unit,
     onClickSave: (Task) -> Unit,
     editTaskViewModel: EditTaskViewModel,
@@ -87,8 +91,9 @@ fun EditTaskPopupDialog(
     val editTaskUiState by editTaskViewModel.uiState.collectAsState()
     var showPicker by rememberSaveable { mutableStateOf(ShowPickerState.NONE) }
 
-    val initialDateMillis =
-        ((initialEpochDay?.let { LocalDate.ofEpochDay(it) }) ?: LocalDate.now())
+    var initialDateMillis = editTaskUiState.taskBeingEdited.initialDate
+    if(initialDateMillis==0L)
+            initialDateMillis =  ((initialEpochDay?.let { LocalDate.ofEpochDay(it) }) ?: LocalDate.now())
             .atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
 
     val datePickerState = rememberDatePickerState(
@@ -97,7 +102,13 @@ fun EditTaskPopupDialog(
     val datePickedUTC = LocalDate.ofInstant(
         Instant.ofEpochMilli(datePickerState.selectedDateMillis!!), ZoneId.of("UTC"))
 
-    val timePickerState = rememberTimePickerState(is24Hour = true)
+    val initialDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(initialDateMillis), ZoneId.systemDefault())
+
+    val timePickerState = rememberTimePickerState(
+        is24Hour = true,
+        initialHour = initialDateTime.hour,
+        initialMinute = initialDateTime.minute
+    )
 
     val onDismissPicker = { showPicker=ShowPickerState.NONE }
 
@@ -114,7 +125,7 @@ fun EditTaskPopupDialog(
             ) {
                 // TITLE
                 Text(
-                    text = stringResource(R.string.new_task),
+                    text = stringResource(if(isNewTask) R.string.new_task else R.string.edit_task),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
@@ -212,7 +223,7 @@ fun EditTaskPopupDialog(
 
                 // RECURRENT
                 Column {
-                    var checkedAsRecurrent by rememberSaveable { mutableStateOf(false) }
+                    var checkedAsRecurrent by rememberSaveable { mutableStateOf(editTaskUiState.taskBeingEdited.isRecurrent()) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = checkedAsRecurrent,
@@ -350,7 +361,7 @@ fun EditTaskPopupDialog(
                                         datePickerState.selectedDateMillis != null
                                 )
                     ) {
-                        Text(text = stringResource(R.string.done))
+                        Text(text = stringResource(R.string.save))
                     }
                 }
             }

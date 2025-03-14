@@ -35,7 +35,8 @@ data class TasksCalendarUiState(
     val users : List<User> = getDefaultUsersList(),
     val showEditTaskDialog : Boolean = false,
     val taskStagedForEdition : Task? = null,
-    val expandedDay : Long? = LocalDate.now().toEpochDay()
+    val expandedDay : Long? = LocalDate.now().toEpochDay(),
+    val expandedTask : Task? = null
 )
 
 class TasksCalendarViewModel(
@@ -93,7 +94,7 @@ class TasksCalendarViewModel(
 
     fun saveTask(task: Task) {
         viewModelScope.launch {
-                tasksListRepository.saveNewTask(task)
+                tasksListRepository.saveNewTask(newTask=task, overOldTask=_uiState.value.taskStagedForEdition)
         }
     }
 
@@ -126,6 +127,16 @@ class TasksCalendarViewModel(
         return _uiState.value.tasks.filter {
             it.initialDate in start..<end
         }.sortedBy { it.initialDate }
+    }
+
+    fun eraseAllTasks() {
+        viewModelScope.launch {
+            tasksListRepository.deleteAllTasks()
+        }
+    }
+
+    fun showTaskDetails(task: Task) {
+        _uiState.update { it.copy(expandedTask = task) }
     }
 }
 

@@ -226,7 +226,7 @@ fun FilterParametersBox(
                 title = stringResource(R.string.shop),
                 options = shopsList.toList().sorted(),
                 currentOptionName = filterParams.shop,
-                onChooseOption = { onChangeFilter(filterParams.toBuilder().setShop(it?:"").build()) },
+                onChooseOption = { onChangeFilter(filterParams.toBuilder().setShop(it).build()) },
                 expanded = shopDropdownExpanded,
                 onToggleExpanded = { shopDropdownExpanded = !shopDropdownExpanded },
                 //modifier = TODO()
