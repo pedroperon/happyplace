@@ -35,7 +35,7 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
     suspend fun saveNewTask(newTask: Task, overOldTask: Task? = null) {
         tasksListStore.updateData { tasksList ->
 
-            val indexOld = tasksList.tasksList.indexOf(overOldTask)
+            val indexOld = if(overOldTask==null) -1 else tasksList.tasksList.indexOf(overOldTask)
 
             if(newTask.id == "")
                 newTask.toBuilder()
@@ -43,8 +43,10 @@ class TasksListRepository (private val tasksListStore: DataStore<LocalTasksList>
                     .build()
             
             tasksList
-                .toBuilder()
-                .removeTasks(indexOld)
+                .toBuilder().apply {
+                    if(indexOld>=0)
+                        removeTasks(indexOld)
+                }
                 .addAllTasks(createAllRepetitionsForTask(newTask))
                 .build()
         }
